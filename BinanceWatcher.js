@@ -335,7 +335,7 @@ class BinanceWatcher{
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BTC","ETH","BNB"]
 const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-const frequency = 350
+const frequency = 500
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
 var trunc = 0
