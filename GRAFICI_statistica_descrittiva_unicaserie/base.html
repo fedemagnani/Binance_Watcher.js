@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">      
+    </head>
+    <body>
+        <div>
+            <div>
+                <label>Min X</label>
+                <input type="number" placeholder="MIN X" id="minimum_x" step="0.001">
+                <label>Max X</label>
+                <input type="number" placeholder="MAX X" id="maximum_x" step="0.001">
+            </div>
+            <div>
+                <label>Min Y</label>
+                <input type="number" placeholder="MIN Y" id="minimum_y" step="0.001">
+                <label>Max Y</label>
+                <input type="number" placeholder="MAX Y" id="maximum_y" step="0.001">
+                <button id="updateaxis">Update Axis</button>
+                <button id="reset">Reset</button>    
+            </div>
+        </div>
+
+        <div>
+            <canvas id="myChart"></canvas>
+        </div>
+    </body>
+    <script></script>
+    <script src="./base.js"></script>
+</html>
