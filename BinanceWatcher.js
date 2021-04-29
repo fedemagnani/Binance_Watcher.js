@@ -105,28 +105,28 @@ class BinanceWatcher{
     })
   }
 
-  fetchCandlesFromAllPairs(quote,timeframe,frequency){
+  fetchCandlesFromAllPairs(quote,timeframe,periodCall){
     return new Promise((resolve)=>{
       console.log("Collecting Candles...")
       this.getAllPairs(quote).then((tutteLecoppie)=>{
         var i=0
-        var interval = setInterval(()=>{
-          try{
-            console.log(`Pairs left ${quote}_${timeframe}:`,tutteLecoppie.length-(i+1),`(current:${tutteLecoppie[i]})`)
-            if(i+1>=tutteLecoppie.length){
-              clearInterval(interval)
-              console.log("Done! Collected candles from",tutteLecoppie.length,"pairs")
-              resolve()
-            }
-            this.getCandles(tutteLecoppie[i],quote,timeframe).then(()=>{i+=1})
-          }catch(e){
-            if(i+1>=tutteLecoppie.length){
-              clearInterval(interval)
-              console.log("Done! Collected candles from",tutteLecoppie.length,"pairs")
-              resolve()
-            }          
+        var p = ()=> new Promise((res)=>{
+          console.log(`Pairs left ${quote}_${timeframe}:`,tutteLecoppie.length-(i+1),`(current:${tutteLecoppie[i]})`)
+          if(i+1>=tutteLecoppie.length){
+            console.log("Done! Collected candles from",tutteLecoppie.length,"pairs")
+            resolve()
           }
-        },frequency)
+          this.getCandles(tutteLecoppie[i],quote,timeframe).then(()=>{
+            i+=1
+            res()
+          })
+        }).then(()=>{
+          setTimeout(()=>{
+            if(i!=tutteLecoppie.length)
+            p()
+          },periodCall)            
+        })
+        return p()
       })
     })
   }
@@ -335,7 +335,7 @@ class BinanceWatcher{
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BTC","ETH","BNB"]
 const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-const frequency = 500
+const periodCall = 50
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
 var trunc = 0
@@ -345,7 +345,7 @@ var z=0
 var doIt = function(){
   return new Promise((resolve,reject)=>{
     console.log("inizio:",i,quoteList.length,z,timeframes.length)
-    watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],frequency).then(()=>{
+    watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall).then(()=>{
       watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z]).then(()=>{
         watcher.efficientFrontier(null,timeframes[z])
         .then(()=>{
