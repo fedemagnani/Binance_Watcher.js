@@ -312,7 +312,7 @@ class BinanceWatcher{
             if(fs.existsSync(percorso)!=true){
               fs.mkdirSync(percorso)
             }
-            fs.writeFileSync(path.join(percorso,`best_sharpes_${quote.toUpperCase()}`), JSON.stringify(obb))
+            fs.writeFileSync(path.join(percorso,`best_sharpes_${quote.toUpperCase()}.json`), JSON.stringify(obb))
             resolve(obb)
             RES(obb)
           } 
@@ -393,7 +393,7 @@ var doIt = function(){
 doIt()
 
 
-// watcher.topNSharpeRatio("ETH",timeframes,25,true) //calcola gli SHARPE
+// watcher.topNSharpeRatio("BNB",timeframes,25,true) //calcola gli SHARPE
 
 // watcher.efficientFrontier("USDT","1d",0)
 
