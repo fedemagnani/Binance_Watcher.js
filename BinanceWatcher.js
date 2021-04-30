@@ -319,7 +319,11 @@ class BinanceWatcher{
           var percorso = path.join(__dirname,`Statistica_Descrittiva_UnicaSerie_${timeframes[i]}`)
           var data = fs.readFileSync(path.join(percorso,`all_pairs_${quote.toUpperCase()}_${timeframes[i]}`))
           var parsedData = JSON.parse(data)
-          var bestSharpes = _.sortBy(parsedData,"sharpe_ratio").reverse().splice(0,n)
+          var bestSharpes = _.sortBy(parsedData,"sharpe_ratio").reverse().map((x)=>{
+            if(x.sharpe_ratio){
+              return x
+            }
+          }).filter((x)=>{if(x)return x}).splice(0,n)
           if (synth){
             bestSharpes=bestSharpes.map((x)=>{
               var w = {
@@ -393,7 +397,7 @@ var doIt = function(){
 doIt()
 
 
-// watcher.topNSharpeRatio("BNB",timeframes,25,true) //calcola gli SHARPE
+// watcher.topNSharpeRatio("USDT",timeframes,25,true) //calcola gli SHARPE
 
 // watcher.efficientFrontier("USDT","1d",0)
 
