@@ -170,11 +170,21 @@ class BinanceWatcher{
   }
   
   VaR(parsedData){
-    return ss.quantile(parsedData,0.05)
+    try{
+      return ss.quantile(parsedData,0.05)
+    }
+    catch(e){
+      return null
+    }
   }
 
   ninetyfifthPerc(parsedData){
-    return ss.quantile(parsedData,0.95)
+    try{
+      return ss.quantile(parsedData,0.95)
+    }
+    catch(e){
+      return null
+    }
   }
 
   skewness(parsedData){
@@ -345,63 +355,60 @@ class BinanceWatcher{
       return childFunction()
     })
   }
-}
 
-//const quote="BNB" //"USDT","BTC","ETH","BNB"
-var quoteList = ["USDT","BTC","ETH","BNB"]
-const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-const periodCall = 50
-const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
-var justTradingPairs = false
-const watcher = new BinanceWatcher()
-const bestNSharpes = 25
-var trunc = 0
-var i=0
-var z=0
-
-var doIt = function(){
-  return new Promise((resolve,reject)=>{
-    console.log("inizio:",i,quoteList.length,z,timeframes.length)
-    watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs)
-    .then(()=>{
-      watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z]).then(()=>{
-        watcher.efficientFrontier(null,timeframes[z])
-        .then(()=>{
-          i+=1
-          console.log(i,quoteList.length,z,timeframes.length)
-          if (i===quoteList.length && z===(timeframes.length-1)){
-            resolve()
-          }
-          if(i===quoteList.length){
-            i=0
-            z+=1
-            reject()
-          }
-          else{
-            reject()
-          }
-        })
-      })
-    })
-  }).then(()=>{console.log("All good")})
-  .catch(()=>{
-    if (justTradingPairs){
-      console.log("Data from selected pairs saved!")
-      return true
-    }else{
-      doIt()
+  arrayOfALLReturnsofALLPAirs(arrayOfAllCandles,moreThanNCandles){
+    arrayOfAllCandles=arrayOfAllCandles.map((x)=>{
+        if(x.length>moreThanNCandles){
+            return x
+        }
+    }).filter((x)=>{if(x)return x})
+    var arrayOfAllReturns = []
+    for(var i=0; i<arrayOfAllCandles.length;i++){
+        var arrayOfReturns = []
+        for(var j=1;j<arrayOfAllCandles[i].length;j++){
+            var r = ((arrayOfAllCandles[i][j])/(arrayOfAllCandles[i][j-1]))-1
+            arrayOfReturns.push(r)
+        }
+        arrayOfAllReturns.push(arrayOfReturns)
     }
-  })
+    return arrayOfAllReturns
+  }
+
+  CovarianceMATRIX(arrayOfReturns,arrayofAllPairs,quote,time_f){
+    var arrayoflengths = arrayOfReturns.map((x)=>{
+        return x.length
+    }).filter((x)=>{if(x)return x})
+    var minimumCommonLength=_.min(arrayoflengths)
+    arrayOfReturns=arrayOfReturns.map((x)=>{
+        return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+    })//.filter((x)=>{if(x) return x})
+    var covarianceMatrix = {}
+    //COMPUTE COVARIANCE MATRIX → since the matrix is symmetric, each array will be the row and the column of the given index
+    for(var i=0;i<arrayOfReturns.length;i++){
+        var covarianceRow =[]
+        for(var j =0; j<arrayOfReturns.length;j++){
+            var covariance=ss.sampleCovariance(arrayOfReturns[i],arrayOfReturns[j])
+            // console.log(covariance)
+            covarianceRow.push(covariance)
+        }
+        covarianceMatrix[arrayofAllPairs[i]]=(covarianceRow)
+    }
+    console.log(covarianceMatrix)
+    this.createDir('Matrici_Covarianze').then((perc)=>{
+      fs.writeFileSync(path.join(perc,`Cov_Matrix_${quote.toUpperCase()}_${time_f}.json`),JSON.stringify(covarianceMatrix))
+    })
+    return covarianceMatrix
+  }
+
+  filteredPairs(arrayOfAllCandles,moreThanNCandles,arrayofAllPairs){
+    var filteredPairs=[]
+    for(var z=0;z<arrayOfAllCandles.length;z++){
+        if (arrayOfAllCandles[z].length>moreThanNCandles){
+            filteredPairs.push(arrayofAllPairs[z])
+        }
+    }
+    return filteredPairs
+  }
 }
 
-doIt()
-
-
-// watcher.topNSharpeRatio("USDT",timeframes,25,true) //calcola gli SHARPE
-
-// watcher.efficientFrontier("USDT","1d",0)
-
-
-// const startDate = "2021-03-14T16:00:00.000Z"
-// const endDate = "2021-03-20T16:00:00.000Z"
-//watcher.tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,startDate,endDate)
+module.exports=BinanceWatcher
