@@ -22,5 +22,19 @@ for(var i=0;i<pesiUguali.length;i++){
     var prodotto = pesiUguali[i]*vettoreRendimentiAttesi[i].rendimentoAtteso
     rendimentoAttesoPortafoglio+=prodotto
 }
-console.log(rendimentoAttesoPortafoglio)
+
 var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
+var arrayDiCOvarianze = Object.values(matriceCovarianza)
+for(var i=0;i<arrayDiCOvarianze.length;i++){
+    var somma=0
+    for(var z=0;z<arrayDiCOvarianze[i].length;z++){
+        var prod=(arrayDiCOvarianze[i][z])*pesiUguali[z]
+        somma+=prod
+    }
+    primaMatriceProdotto.push(somma)
+}
+var deviazioneStandardPort = 0
+for(var i=0;i<primaMatriceProdotto.length;i++){
+    deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiUguali[i])
+}
+console.log(deviazioneStandardPort)
