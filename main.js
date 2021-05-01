@@ -3,8 +3,8 @@ const path=require('path')
 const fs = require('fs');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
-var quoteList = ["USDT"]//["BUSD","USDT","BTC","ETH","BNB"]
-const timeframes =["1d"]//["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+var quoteList = ["BUSD","USDT","BTC","ETH","BNB"]
+const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
 const periodCall = 50 //interval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
@@ -74,7 +74,6 @@ return new Promise((RES)=>{
       pairNames=watcher.filteredPairs(all_candles,requiredCandles,pairNames)
       var all_returns = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
       var covmatrix=watcher.CovarianceMATRIX(all_returns,pairNames,quote,time_f)
-      var cormatrix =watcher.CorrelationMATRIX(all_returns,pairNames,quote,time_f)
     })
   })
 })
