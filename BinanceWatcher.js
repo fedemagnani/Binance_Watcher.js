@@ -4,8 +4,9 @@ const path=require('path')
 const fs = require('fs');
 const _ =require('lodash');
 var ss = require('simple-statistics');
+const PortfolioAllocation = require('portfolio-allocation');
+const { json } = require('express');
 const { resolve } = require('path');
-const { reject } = require('lodash');
 
 class BinanceWatcher{
   constructor(){
@@ -375,29 +376,30 @@ class BinanceWatcher{
   }
 
   CovarianceMATRIX(arrayOfReturns,arrayofAllPairs,quote,time_f){
-    var arrayoflengths = arrayOfReturns.map((x)=>{
+    return new Promise((resolve)=>{
+      var arrayoflengths = arrayOfReturns.map((x)=>{
         return x.length
-    }).filter((x)=>{if(x)return x})
-    var minimumCommonLength=_.min(arrayoflengths)
-    arrayOfReturns=arrayOfReturns.map((x)=>{
-        return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
-    })//.filter((x)=>{if(x) return x})
-    var covarianceMatrix = {}
-    //COMPUTE COVARIANCE MATRIX → since the matrix is symmetric, each array will be the row and the column of the given index
-    for(var i=0;i<arrayOfReturns.length;i++){
-        var covarianceRow =[]
-        for(var j =0; j<arrayOfReturns.length;j++){
-            var covariance=ss.sampleCovariance(arrayOfReturns[i],arrayOfReturns[j])
-            // console.log(covariance)
-            covarianceRow.push(covariance)
-        }
-        covarianceMatrix[arrayofAllPairs[i]]=(covarianceRow)
-    }
-    console.log(covarianceMatrix)
-    this.createDir('Matrici_Covarianze').then((perc)=>{
-      fs.writeFileSync(path.join(perc,`Cov_Matrix_${quote.toUpperCase()}_${time_f}.json`),JSON.stringify(covarianceMatrix))
+      }).filter((x)=>{if(x)return x})
+      var minimumCommonLength=_.min(arrayoflengths)
+      arrayOfReturns=arrayOfReturns.map((x)=>{
+          return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+      })//.filter((x)=>{if(x) return x})
+      var covarianceMatrix = {}
+      //COMPUTE COVARIANCE MATRIX → since the matrix is symmetric, each array will be the row and the column of the given index
+      for(var i=0;i<arrayOfReturns.length;i++){
+          var covarianceRow =[]
+          for(var j =0; j<arrayOfReturns.length;j++){
+              var covariance=ss.sampleCovariance(arrayOfReturns[i],arrayOfReturns[j])
+              // console.log(covariance)
+              covarianceRow.push(covariance)
+          }
+          covarianceMatrix[arrayofAllPairs[i]]=(covarianceRow)
+      }
+      this.createDir('Matrici_Covarianze').then((perc)=>{
+        fs.writeFileSync(path.join(perc,`Cov_Matrix_${quote.toUpperCase()}_${time_f}.json`),JSON.stringify(covarianceMatrix))
+      })
+      resolve(covarianceMatrix)
     })
-    return covarianceMatrix
   }
 
   filteredPairs(arrayOfAllCandles,moreThanNCandles,arrayofAllPairs){
@@ -408,6 +410,66 @@ class BinanceWatcher{
         }
     }
     return filteredPairs
+  }
+
+  portafoglioOttimo(quote,tf){ //shoutout to lequant40
+    return new Promise((resolve)=>{
+      var statisticaDescrittiva=JSON.parse(fs.readFileSync(path.join(__dirname,`Statistica_Descrittiva_UnicaSerie_${tf}/all_pairs_${quote.toUpperCase()}_${tf}`)))
+      var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
+      var coppie = Object.keys(matriceCovarianza)
+  
+      var vettoreRendimentiAttesi=statisticaDescrittiva.map((x)=>{
+          if(_.includes(coppie,x.pair)){
+              return {
+                  pair:x.pair,
+                  rendimentoAtteso:x.expected_return
+              }    
+          }
+      }).filter((x)=>{if(x)return x})
+  
+      var romanCovMatr = PortfolioAllocation.covarianceMatrix(Object.values(matriceCovarianza))
+      romanCovMatr.coppie=coppie
+      var romanE = PortfolioAllocation.meanVector(vettoreRendimentiAttesi.map((x)=>{return [x.rendimentoAtteso]}))
+      var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)
+      var vettorePesiSharpes={}
+      for (var i=0;i<coppie.length;i++){
+          vettorePesiSharpes[coppie[i]]=pesiSharpes[i]
+      }
+  
+      var rendimentoAttesoPortafoglio = 0
+      for(var i=0;i<pesiSharpes.length;i++){
+          var prodotto = pesiSharpes[i]*vettoreRendimentiAttesi[i].rendimentoAtteso
+          rendimentoAttesoPortafoglio+=prodotto
+      }
+  
+      var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
+      var arrayDiCOvarianze = Object.values(matriceCovarianza)
+      for(var i=0;i<arrayDiCOvarianze.length;i++){
+          var somma=0
+          for(var z=0;z<arrayDiCOvarianze[i].length;z++){
+              var prod=(arrayDiCOvarianze[i][z])*pesiSharpes[z]
+              somma+=prod
+          }
+          primaMatriceProdotto.push(somma)
+      }
+      var deviazioneStandardPort = 0
+      for(var i=0;i<primaMatriceProdotto.length;i++){
+          deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiSharpes[i])
+      }
+      var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
+      var optimalPortfolio ={
+          pesi:vettorePesiSharpes,
+          rendimento_atteso:rendimentoAttesoPortafoglio,
+          deviazione_standard:deviazioneStandardPort,
+          sharpe_ratio:sharpe_ratio
+      }
+      this.createDir('Portafogli_Ottimi').then((perc)=>{
+        this.createDir(tf,perc).then((percorso)=>{
+          fs.writeFileSync(path.join(percorso,`OM_${quote}_${tf}`),JSON.stringify(optimalPortfolio))
+        })
+      })
+      resolve(optimalPortfolio)  
+    })
   }
 }
 
