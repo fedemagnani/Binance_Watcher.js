@@ -58,7 +58,7 @@ class BinanceWatcher{
           }
         }).filter((x)=>{if(x){return x}})
 
-        fs.writeFileSync('allTargets_'+quote.toUpperCase(),JSON.stringify(justUSDTpairs))
+        fs.writeFileSync(path.join(__dirname,'allTargets_'+quote.toUpperCase()),JSON.stringify(justUSDTpairs))
         if(justUSDTpairs.length>0){
           resolve(justUSDTpairs)
         }
