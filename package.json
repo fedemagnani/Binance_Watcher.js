@@ -22,6 +22,7 @@
     "jquery": "^3.6.0",
     "lodash": "^4.17.21",
     "path": "^0.12.7",
+    "portfolio-allocation": "0.0.11",
     "request": "^2.88.2",
     "simple-statistics": "^7.7.0"
   }
