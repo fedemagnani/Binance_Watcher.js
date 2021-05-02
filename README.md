@@ -13,7 +13,9 @@ STEPS:
 
 2) `cd Binance_Watcher.js`
 
-3) `node BinanceWatcher`
+3) `npm install` (in order to install all the dependencies)
+
+4) `node main`
 
 This will allow you to download the last 1000 candles of each timeframe you've set (by default: "5m","30m","1h","4h","1d","1w") of ANY PAIR against the quote assets you've set (by default: "USDT","BTC","ETH","BNB"). For example, you can check the daily USDT candles by going to "/Candele_BTC/1d/" and then select the pair you want.
 
