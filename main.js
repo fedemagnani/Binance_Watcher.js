@@ -10,7 +10,6 @@ const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUS
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var trunc = 0
 var requiredCandles = 500 //for covariance matrix
 
 return new Promise((RES)=>{
@@ -40,8 +39,9 @@ return new Promise((RES)=>{
               //quando invoco arrayofallreturnsallpairs devo togliere l'elemwnto corrispondente dall'array
               pairNames=watcher.filteredPairs(all_candles,requiredCandles,pairNames)
               var all_returns = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
+              var all_returns2 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               watcher.CovarianceMATRIX(all_returns,pairNames,quoteList[i],timeframes[z]).then((matrice_covarianze)=>{
-                watcher.portafoglioOttimo(quoteList[i],timeframes[z])
+                watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2)
                 .then((portafoglioOttimo)=>{
                   // console.log(portafoglioOttimo)
                   i+=1
@@ -81,8 +81,8 @@ return new Promise((RES)=>{
 // const endDate = "2021-03-20T16:00:00.000Z"
 //watcher.tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,startDate,endDate)
 
-// var quote="USDT" //for covariance matrix
-// var time_f ="5m" //for covariance matrix
+// var quote="BUSD" //for covariance matrix
+// var time_f ="1d" //for covariance matrix
 
 
 // watcher.createDir(`Candele_${quote.toUpperCase()}`).then((percorso)=>{
@@ -101,8 +101,9 @@ return new Promise((RES)=>{
 //   //quando invoco arrayofallreturnsallpairs devo togliere l'elemwnto corrispondente dall'array
 //   pairNames=watcher.filteredPairs(all_candles,requiredCandles,pairNames)
 //   var all_returns = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
+//   var all_returns2 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
 //   watcher.CovarianceMATRIX(all_returns,pairNames,quote,time_f).then((matrice_covarianze)=>{
-//     watcher.portafoglioOttimo(quote,time_f).then((portafoglioOttimo)=>{
+//     watcher.portafoglioOttimo(quote,time_f,all_returns2).then((portafoglioOttimo)=>{
 //       console.log(portafoglioOttimo)
 //     })
 //   })

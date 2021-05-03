@@ -390,25 +390,23 @@ class BinanceWatcher{
     return filteredPairs
   }
 
-  portafoglioOttimo(quote,tf){ //shoutout to lequant40
+  portafoglioOttimo(quote,tf,arrayOfReturns){ //shoutout to lequant40
     return new Promise((resolve)=>{3
       try{
-        var statisticaDescrittiva=JSON.parse(fs.readFileSync(path.join(__dirname,`Statistica_Descrittiva_UnicaSerie_${tf}/all_pairs_${quote.toUpperCase()}_${tf}`)))
         var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
         var coppie = Object.keys(matriceCovarianza)
-    
-        var vettoreRendimentiAttesi=statisticaDescrittiva.map((x)=>{
-            if(_.includes(coppie,x.pair)){
-                return {
-                    pair:x.pair,
-                    rendimentoAtteso:x.expected_return
-                }    
-            }
+        var arrayoflengths = arrayOfReturns.map((x)=>{
+          return x.length
         }).filter((x)=>{if(x)return x})
+        var minimumCommonLength=_.min(arrayoflengths)
+        arrayOfReturns=arrayOfReturns.map((x)=>{
+            return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+        })//.filter((x)=>{if(x) return x})
     
-        var romanCovMatr = PortfolioAllocation.covarianceMatrix(Object.values(matriceCovarianza))
+        var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
+        console.log(matriceCovarianza)
         romanCovMatr.coppie=coppie
-        var romanE = PortfolioAllocation.meanVector(vettoreRendimentiAttesi.map((x)=>{return [x.rendimentoAtteso]}))
+        var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
         var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)
         var vettorePesiSharpes={}
         for (var i=0;i<coppie.length;i++){
@@ -417,7 +415,7 @@ class BinanceWatcher{
     
         var rendimentoAttesoPortafoglio = 0
         for(var i=0;i<pesiSharpes.length;i++){
-            var prodotto = pesiSharpes[i]*vettoreRendimentiAttesi[i].rendimentoAtteso
+            var prodotto = pesiSharpes[i]*Array.from(romanE.data)[i]
             rendimentoAttesoPortafoglio+=prodotto
         }
     
