@@ -404,7 +404,6 @@ class BinanceWatcher{
         })//.filter((x)=>{if(x) return x})
     
         var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
-        console.log(matriceCovarianza)
         romanCovMatr.coppie=coppie
         var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
         var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)

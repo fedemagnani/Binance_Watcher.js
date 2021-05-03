@@ -43,7 +43,7 @@ return new Promise((RES)=>{
               watcher.CovarianceMATRIX(all_returns,pairNames,quoteList[i],timeframes[z]).then((matrice_covarianze)=>{
                 watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2)
                 .then((portafoglioOttimo)=>{
-                  // console.log(portafoglioOttimo)
+                  console.log(portafoglioOttimo)
                   i+=1
                   console.log(i,quoteList.length,z,timeframes.length)
                   if (i===quoteList.length && z===(timeframes.length-1)){
