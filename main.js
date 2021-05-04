@@ -1,16 +1,18 @@
 var BinanceWatcher = require('./BinanceWatcher')
 const path=require('path')
 const fs = require('fs');
+const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
-var quoteList = ["BUSD","USDT","BTC","ETH","BNB"]
+var quoteList = ["ETH","USDT","BUSD","BTC","BNB"]
 const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-const periodCall = 50 //interval between one api call and the next one
+var pairsToExclude=["PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
+const periodCall = 50 //inteUPrval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var requiredCandles = 500 //for covariance matrix
+var requiredCandles = 250 //for covariance matrix
 
 return new Promise((RES)=>{
   var i=0
@@ -18,7 +20,7 @@ return new Promise((RES)=>{
   var doIt = function(){
     return new Promise((resolve,reject)=>{
       console.log("inizio:",i,quoteList.length,z,timeframes.length)
-      watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs)
+      watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs,pairsToExclude)
       .then(()=>{
         watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z]).then(()=>{
           watcher.topNSharpeRatio(quoteList[i],timeframes[z],bestNSharpes,true)
@@ -28,13 +30,16 @@ return new Promise((RES)=>{
               var all_candles=[]
               var files_inside_folder = fs.readdirSync(path.join(__dirname,`Candele_${quoteList[i].toUpperCase()}/${timeframes[z]}`))
               for(var w=0;w<files_inside_folder.length;w++){
-                var pairName = files_inside_folder[w].split('-')[0]
-                pairNames.push(pairName)
-                var infoPair = JSON.parse(fs.readFileSync(path.join(__dirname,`Candele_${quoteList[i].toUpperCase()}/${timeframes[z]}/${files_inside_folder[w]}`)))
-                var justClose= infoPair.map((x)=>{
-                  return x.Close
-                })
-                all_candles.push(justClose)
+                console.log()
+                if(_.includes(pairsToExclude,files_inside_folder[w].split('-')[0].replace(quoteList[i].toUpperCase(),""))!=true){
+                  var pairName = files_inside_folder[w].split('-')[0]
+                  pairNames.push(pairName)
+                  var infoPair = JSON.parse(fs.readFileSync(path.join(__dirname,`Candele_${quoteList[i].toUpperCase()}/${timeframes[z]}/${files_inside_folder[w]}`)))
+                  var justClose= infoPair.map((x)=>{
+                    return x.Close
+                  })
+                  all_candles.push(justClose)
+                }
               }
               //quando invoco arrayofallreturnsallpairs devo togliere l'elemwnto corrispondente dall'array
               pairNames=watcher.filteredPairs(all_candles,requiredCandles,pairNames)

@@ -1,4 +1,3 @@
-
 var request = require('request');
 const path=require('path')
 const fs = require('fs');
@@ -32,7 +31,7 @@ class BinanceWatcher{
     return result 
   }
 
-  getAllPairs(quote,activePairs,justTrading){
+  getAllPairs(quote,activePairs,justTrading,pairsToExclude){
     return new Promise((resolve,reject)=>{
       var options = {
         'method': 'GET',
@@ -54,7 +53,7 @@ class BinanceWatcher{
           console.log(_.difference(upact,symbols.map((x)=>{return x.symbol})))
         }
         var justUSDTpairs = symbols.map((x)=>{
-          if(x.quoteAsset.includes(quote)&&x.status==="TRADING"){
+          if(x.quoteAsset.includes(quote)&&x.status==="TRADING"&&_.includes(pairsToExclude,x.baseAsset)!=true){
             return x.baseAsset
           }
         }).filter((x)=>{if(x){return x}})
@@ -117,10 +116,10 @@ class BinanceWatcher{
     })
   }
 
-  fetchCandlesFromAllPairs(quote,timeframe,periodCall,activePairs,justTrading){
+  fetchCandlesFromAllPairs(quote,timeframe,periodCall,activePairs,justTrading,pairsToExclude){
     return new Promise((resolve)=>{
       console.log("Collecting Candles...")
-      this.getAllPairs(quote,activePairs,justTrading).then((tutteLecoppie)=>{
+      this.getAllPairs(quote,activePairs,justTrading,pairsToExclude).then((tutteLecoppie)=>{
         var i=0
         var p = ()=> new Promise((res)=>{
           console.log(`Pairs left ${quote}_${timeframe}:`,tutteLecoppie.length-(i+1),`(current:${tutteLecoppie[i]})`)
@@ -409,7 +408,7 @@ class BinanceWatcher{
         var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)
         var vettorePesiSharpes={}
         for (var i=0;i<coppie.length;i++){
-            vettorePesiSharpes[coppie[i]]=pesiSharpes[i]
+            vettorePesiSharpes[coppie[i]]=pesiSharpes[i]+`; (${Math.round(pesiSharpes[i]*Math.pow(10,4))/Math.pow(10,2)}%)`
         }
     
         var rendimentoAttesoPortafoglio = 0
@@ -439,6 +438,21 @@ class BinanceWatcher{
             deviazione_standard:deviazioneStandardPort,
             sharpe_ratio:sharpe_ratio
         }
+        var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OM_${quote}_${tf}.json`))
+        if(esistePortafPrecedente){
+          var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OM_${quote}_${tf}.json`)))
+          if (PortPrec.pesi){
+            var assetNuovi = Object.keys(optimalPortfolio.pesi)
+            var pesiNuovi = Object.values(optimalPortfolio.pesi)
+            var assetVecchi = Object.keys(PortPrec.pesi)
+            var pesiVecchi = Object.keys(PortPrec.pesi)
+            for(var i=0; i<assetNuovi.length; i++){
+              if(optimalPortfolio.pesi[assetVecchi[i]]){
+                optimalPortfolio.pesi[assetVecchi[i]]=optimalPortfolio.pesi[assetVecchi[i]]+`; ${Math.round(Number(Number(optimalPortfolio.pesi[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
+              }
+            }
+          }
+        }
         this.createDir('Portafogli_Ottimi').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
             fs.writeFileSync(path.join(percorso,`OM_${quote}_${tf}.json`),JSON.stringify(optimalPortfolio))
@@ -446,6 +460,7 @@ class BinanceWatcher{
         })
         resolve(optimalPortfolio)
       }catch(e){
+        console.log(e)
         this.createDir('Portafogli_Ottimi').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
             fs.writeFileSync(path.join(percorso,`OM_${quote}_${tf}.json`),JSON.stringify(e))
