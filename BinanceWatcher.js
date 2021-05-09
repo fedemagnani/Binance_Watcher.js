@@ -432,6 +432,7 @@ class BinanceWatcher{
         for(var i=0;i<primaMatriceProdotto.length;i++){
             deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiSharpes[i])
         }
+        var deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
         var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
         var optimalPortfolio ={
             pesi:vettorePesiSharpes,

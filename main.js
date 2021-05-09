@@ -50,7 +50,7 @@ return new Promise((RES)=>{
                   watcher.tuttoInCsv(quoteList[i],timeframes[z]).then((csv)=>{
                     watcher.tuttoInCsv(quoteList[i],timeframes[z],pairNames)
                     .then((csv_filtered)=>{
-                      // console.log(portafoglioOttimo)
+                      console.log(portafoglioOttimo)
                       i+=1
                       console.log(i,quoteList.length,z,timeframes.length)
                       if (i===quoteList.length && z===(timeframes.length-1)){
