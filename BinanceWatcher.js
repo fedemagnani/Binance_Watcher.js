@@ -1,3 +1,4 @@
+//Aggiornando tutte le candele dovrai rimuovere dalle cartelle le coppie delistate da Binance
 var request = require('request');
 const path=require('path')
 const fs = require('fs');
@@ -359,7 +360,7 @@ class BinanceWatcher{
       }).filter((x)=>{if(x)return x})
       var minimumCommonLength=_.min(arrayoflengths)
       arrayOfReturns=arrayOfReturns.map((x)=>{
-          return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+          return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
       })//.filter((x)=>{if(x) return x})
       var covarianceMatrix = {}
       //COMPUTE COVARIANCE MATRIX → since the matrix is symmetric, each array will be the row and the column of the given index
@@ -390,7 +391,7 @@ class BinanceWatcher{
   }
 
   portafoglioOttimo(quote,tf,arrayOfReturns){ //shoutout to lequant40
-    return new Promise((resolve)=>{3
+    return new Promise((resolve)=>{
       try{
         var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
         var coppie = Object.keys(matriceCovarianza)
@@ -399,9 +400,9 @@ class BinanceWatcher{
         }).filter((x)=>{if(x)return x})
         var minimumCommonLength=_.min(arrayoflengths)
         arrayOfReturns=arrayOfReturns.map((x)=>{
-            return x.splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+            return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
         })//.filter((x)=>{if(x) return x})
-    
+        // console.log(arrayOfReturns) //ok
         var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
         romanCovMatr.coppie=coppie
         var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
@@ -438,9 +439,9 @@ class BinanceWatcher{
             deviazione_standard:deviazioneStandardPort,
             sharpe_ratio:sharpe_ratio
         }
-        var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OM_${quote}_${tf}.json`))
+        var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OPF_${quote}_${tf}.json`))
         if(esistePortafPrecedente){
-          var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OM_${quote}_${tf}.json`)))
+          var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OPF_${quote}_${tf}.json`)))
           if (PortPrec.pesi){
             var assetNuovi = Object.keys(optimalPortfolio.pesi)
             var pesiNuovi = Object.values(optimalPortfolio.pesi)
@@ -455,7 +456,7 @@ class BinanceWatcher{
         }
         this.createDir('Portafogli_Ottimi').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
-            fs.writeFileSync(path.join(percorso,`OM_${quote}_${tf}.json`),JSON.stringify(optimalPortfolio))
+            fs.writeFileSync(path.join(percorso,`OPF_${quote}_${tf}.json`),JSON.stringify(optimalPortfolio))
           })
         })
         resolve(optimalPortfolio)
@@ -463,13 +464,64 @@ class BinanceWatcher{
         console.log(e)
         this.createDir('Portafogli_Ottimi').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
-            fs.writeFileSync(path.join(percorso,`OM_${quote}_${tf}.json`),JSON.stringify(e))
+            fs.writeFileSync(path.join(percorso,`OPF_${quote}_${tf}.json`),JSON.stringify(e))
           })
         })
         resolve(e)
       }
     })
   }
+
+  tuttoInCsv(quote,tf,listaCoppie){//closes will be sorted from the most recent ones; listacoppie can be undefined
+    return new Promise((resolve)=>{
+      this.createDir("CSV").then((perc)=>{
+        this.createDir(tf,perc).then((percorso)=>{
+          var percorsoFile = path.join(__dirname,`Candele_${quote.toUpperCase()}/${tf}`)
+          var tuttifiles = fs.readdirSync(percorsoFile)
+          if (listaCoppie){
+            tuttifiles=tuttifiles.map((x)=>{
+              if(_.includes(listaCoppie,x.split("-")[0])){
+                return x
+              }
+            }).filter((x)=>{if(x)return x})
+          }
+          var ob = {}
+          for(var i=0;i<tuttifiles.length;i++){
+            var data = fs.readFileSync(path.join(percorsoFile,tuttifiles[i]))
+            var parsedData=JSON.parse(data)
+            var justClose = parsedData.map((x)=>{
+              return x.Close
+            })
+            ob[tuttifiles[i].split("-")[0]]=justClose
+          }
+          // console.log(ob)
+          var keys = Object.keys(ob).toString()+'\n'
+          var arrayOfLengths = Object.values(ob).map((x)=>{
+            return x.length
+          })
+          var maximumLength = _.max(arrayOfLengths)
+          var csv = keys
+          for(var i=0;i<maximumLength;i++){
+            var text=""
+            Object.values(ob).map((x)=>{
+              var t =x.pop()
+              if(!t){
+                t=""
+              }
+              text += t+","
+            })
+            csv+=text+'\n'
+          }
+          var nomeFile = listaCoppie?`CSV_${quote}_${tf}_selectedPairs(OPF)`:`CSV_${quote}_${tf}`
+          fs.writeFileSync(path.join(percorso,nomeFile),csv)
+          // return ob
+          resolve(csv)
+          //crea il csv partendo da tuttifiles
+        })
+      })
+    })
+  }
+
 }
 
 module.exports=BinanceWatcher

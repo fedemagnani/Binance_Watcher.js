@@ -4,15 +4,15 @@ const fs = require('fs');
 const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
-var quoteList = ["ETH","USDT","BUSD","BTC","BNB"]
-const timeframes =["5m","30m","1h","4h","1d","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-var pairsToExclude=["PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
+var quoteList = ["BUSD","ETH","USDT","BTC","BNB"]
+const timeframes =["1d","5m","30m","1h","4h","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+var pairsToExclude=["WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
 const periodCall = 50 //inteUPrval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var requiredCandles = 250 //for covariance matrix
+var requiredCandles = 90 //for covariance matrix
 
 return new Promise((RES)=>{
   var i=0
@@ -46,23 +46,27 @@ return new Promise((RES)=>{
               var all_returns = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               var all_returns2 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               watcher.CovarianceMATRIX(all_returns,pairNames,quoteList[i],timeframes[z]).then((matrice_covarianze)=>{
-                watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2)
-                .then((portafoglioOttimo)=>{
-                  console.log(portafoglioOttimo)
-                  i+=1
-                  console.log(i,quoteList.length,z,timeframes.length)
-                  if (i===quoteList.length && z===(timeframes.length-1)){
-                    RES()
-                    resolve()
-                  }
-                  if(i===quoteList.length){
-                    i=0
-                    z+=1
-                    reject()
-                  }
-                  else{
-                    reject()
-                  }
+                watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2).then((portafoglioOttimo)=>{
+                  watcher.tuttoInCsv(quoteList[i],timeframes[z]).then((csv)=>{
+                    watcher.tuttoInCsv(quoteList[i],timeframes[z],pairNames)
+                    .then((csv_filtered)=>{
+                      // console.log(portafoglioOttimo)
+                      i+=1
+                      console.log(i,quoteList.length,z,timeframes.length)
+                      if (i===quoteList.length && z===(timeframes.length-1)){
+                        RES()
+                        resolve()
+                      }
+                      if(i===quoteList.length){
+                        i=0
+                        z+=1
+                        reject()
+                      }
+                      else{
+                        reject()
+                      }
+                    })
+                  })
                 })
               })
             })
