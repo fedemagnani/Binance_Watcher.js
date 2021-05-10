@@ -237,11 +237,11 @@ class BinanceWatcher{
   tutteLeCoppieSintesiStatisticaDescrittiva(quote,timeframe){
     return new Promise((resolve)=>{
       return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
-        var TOTALPairs = fs.readdirSync(`./Candele_${quote.toUpperCase()}/${timeframe}`)
+        var TOTALPairs = fs.readdirSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}`))
         var stats =[]
         for(var i=0;i<TOTALPairs.length;i++){
           var pair = TOTALPairs[i].split('-')[0]
-          var data=fs.readFileSync(path.join(`./Candele_${quote.toUpperCase()}/${timeframe}`,TOTALPairs[i]))
+          var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
           var parsedData = JSON.parse(data)
           var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
           stats.push(stat)
@@ -257,12 +257,12 @@ class BinanceWatcher{
 
   tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,data_inizio,data_fine){
     return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
-      var InitialTOTALPairs = fs.readdirSync(`./Candele_${quote.toUpperCase()}/${timeframe}`)
+      var InitialTOTALPairs = fs.readdirSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}`))
       var TOTALPairs=InitialTOTALPairs
       var stats =[]
       for(var i=0;i<TOTALPairs.length;i++){
         var pair = TOTALPairs[i].split('-')[0]
-        var data=fs.readFileSync(path.join(`./Candele_${quote.toUpperCase()}/${timeframe}`,TOTALPairs[i]))
+        var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
         var parsedData = JSON.parse(data).map((x)=>{
           if (new Date(x.formattedTimestamp).getTime()>=new Date(data_inizio).getTime() && new Date(x.formattedTimestamp).getTime()<=new Date(data_fine).getTime()){
             return x
@@ -408,8 +408,14 @@ class BinanceWatcher{
         var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
         var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)
         var vettorePesiSharpes={}
+        var arrayPesiOPF = []
         for (var i=0;i<coppie.length;i++){
-            vettorePesiSharpes[coppie[i]]=pesiSharpes[i]+`; (${Math.round(pesiSharpes[i]*Math.pow(10,4))/Math.pow(10,2)}%)`
+          var w = {
+            pair:coppie[i],
+            weight:pesiSharpes[i]
+          }
+          vettorePesiSharpes[coppie[i]]=pesiSharpes[i]+`; (${Math.round(pesiSharpes[i]*Math.pow(10,4))/Math.pow(10,2)}%)`;
+          arrayPesiOPF.push(w)
         }
     
         var rendimentoAttesoPortafoglio = 0
@@ -440,6 +446,12 @@ class BinanceWatcher{
             deviazione_standard:deviazioneStandardPort,
             sharpe_ratio:sharpe_ratio
         }
+        var sintesi = {
+          rendimento_atteso:rendimentoAttesoPortafoglio,
+          deviazione_standard:deviazioneStandardPort,
+          sharpe_ratio:sharpe_ratio
+        }
+        arrayPesiOPF.push(sintesi)
         var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OPF_${quote}_${tf}.json`))
         if(esistePortafPrecedente){
           var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Ottimi/${tf}/OPF_${quote}_${tf}.json`)))
@@ -458,6 +470,9 @@ class BinanceWatcher{
         this.createDir('Portafogli_Ottimi').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
             fs.writeFileSync(path.join(percorso,`OPF_${quote}_${tf}.json`),JSON.stringify(optimalPortfolio))
+            this.createDir('Formato_Stealth',percorso).then((p)=>{
+              fs.writeFileSync(path.join(p,`OPF_${quote}_${tf}_stealth.json`),JSON.stringify(arrayPesiOPF))
+            })
           })
         })
         resolve(optimalPortfolio)
