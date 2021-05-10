@@ -94,6 +94,7 @@ class BinanceWatcher{
               Volume:x[5]
             }
           })
+          candles.pop()
           resolve(candles)
         });
       }).then((synthCandles)=>{
