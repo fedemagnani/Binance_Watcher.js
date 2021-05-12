@@ -473,6 +473,18 @@ class BinanceWatcher{
             fs.writeFileSync(path.join(percorso,`OPF_${quote}_${tf}.json`),JSON.stringify(optimalPortfolio))
             this.createDir('Formato_Stealth',percorso).then((p)=>{
               fs.writeFileSync(path.join(p,`OPF_${quote}_${tf}_stealth.json`),JSON.stringify(arrayPesiOPF))
+              this.createDir('CSV',percorso).then((p2)=>{
+                var csvOPF = ''
+                var soloCoppiaPeso = arrayPesiOPF.map((x)=>{
+                  if (x.weight){
+                    return x.pair+";"+x.weight
+                  }
+                }).filter((x)=>{if(x)return x})
+                for(var i=0;i<soloCoppiaPeso.length;i++){
+                  csvOPF+=soloCoppiaPeso[i]+'\n'
+                }
+                fs.writeFileSync(path.join(p2,`CSV_OPF_${quote}_${tf}.csv`),csvOPF)
+              })
             })
           })
         })
