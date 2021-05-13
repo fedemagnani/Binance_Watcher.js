@@ -14,6 +14,7 @@
   "dependencies": {
     "chart.js": "^3.2.0",
     "constrained": "^0.2.7",
+    "crypto": "^1.0.1",
     "electron": "^12.0.5",
     "express": "^4.17.1",
     "fetch": "^1.1.0",
@@ -24,6 +25,7 @@
     "path": "^0.12.7",
     "portfolio-allocation": "0.0.11",
     "request": "^2.88.2",
-    "simple-statistics": "^7.7.0"
+    "simple-statistics": "^7.7.0",
+    "ttest": "^3.0.0"
   }
 }

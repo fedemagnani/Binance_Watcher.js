@@ -5,14 +5,14 @@ const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BUSD","ETH","BTC","BNB"]
-const timeframes =["1d","5m","30m","1h","4h","1w"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+const timeframes =["1d","1w","1M","5m","30m","1h","4h"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
 var pairsToExclude=["SUSD","WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
 const periodCall = 0 //inteUPrval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var requiredCandles = 90 //for covariance matrix
+var requiredCandles = 60 //for covariance matrix and optimal portfolio
 
 return new Promise((RES)=>{
   var i=0

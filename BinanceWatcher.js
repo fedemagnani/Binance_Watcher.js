@@ -408,6 +408,20 @@ class BinanceWatcher{
         romanCovMatr.coppie=coppie
         var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
         var pesiSharpes = PortfolioAllocation.maximumSharpeRatioWeights(romanE,romanCovMatr,0)
+        var rendimentiPesati = []
+        for(var z=0;z<arrayOfReturns.length;z++){
+          var seriePesata =arrayOfReturns[z].map((x)=>{
+            return x*pesiSharpes[z]
+          }) 
+          rendimentiPesati.push(seriePesata)
+        }
+        var OPFreturns = rendimentiPesati.reduce(function(a, b){ //succesione dei rendimenti del portafoglio ottimo
+          return a.map(function(v,i){
+              return v+b[i];
+          });
+        });
+
+        var OPFerroreStandard = ss.sampleStandardDeviation(OPFreturns)/Math.pow(OPFreturns.length,0.5)
         var vettorePesiSharpes={}
         var arrayPesiOPF = []
         for (var i=0;i<coppie.length;i++){
@@ -424,7 +438,7 @@ class BinanceWatcher{
             var prodotto = pesiSharpes[i]*Array.from(romanE.data)[i]
             rendimentoAttesoPortafoglio+=prodotto
         }
-    
+        var statT=rendimentoAttesoPortafoglio/OPFerroreStandard
         var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
         var arrayDiCOvarianze = Object.values(matriceCovarianza)
         for(var i=0;i<arrayDiCOvarianze.length;i++){
@@ -439,10 +453,12 @@ class BinanceWatcher{
         for(var i=0;i<primaMatriceProdotto.length;i++){
             deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiSharpes[i])
         }
-        var deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
+        deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
         var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
         var optimalPortfolio ={
             pesi:vettorePesiSharpes,
+            statisticaT_rendimento_atteso:statT,
+            numerosità_campione:OPFreturns.length,
             rendimento_atteso:rendimentoAttesoPortafoglio,
             deviazione_standard:deviazioneStandardPort,
             sharpe_ratio:sharpe_ratio
@@ -481,7 +497,7 @@ class BinanceWatcher{
                   }
                 }).filter((x)=>{if(x)return x})
                 for(var i=0;i<soloCoppiaPeso.length;i++){
-                  csvOPF+=soloCoppiaPeso[i]+'\n'
+                  csvOPF+='BINANCE:'+soloCoppiaPeso[i]+'\n'
                 }
                 fs.writeFileSync(path.join(p2,`CSV_OPF_${quote}_${tf}.csv`),csvOPF)
               })
@@ -549,6 +565,10 @@ class BinanceWatcher{
         })
       })
     })
+  }
+
+  check_Balance(apikey,apiSecret){
+    
   }
 
 }
