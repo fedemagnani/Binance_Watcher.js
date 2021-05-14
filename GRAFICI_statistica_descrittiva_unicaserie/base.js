@@ -11,7 +11,7 @@ try{
     var minyyy=-0.003
     var maxxxx=0.1
     var maxyyy=0.003
-
+    var portafoglioOttimo = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Ottimi/${timeframe}/OPF_${quote}_${timeframe}.json`)))
     var tuttiIfiles = JSON.parse(fs.readFileSync(path.join(`../Statistica_Descrittiva_UnicaSerie_${timeframe}/all_pairs_${quote}_${timeframe}`)))
     var tuttiIDataSets = tuttiIfiles.map((x)=>{
             var etichetta = x.pair
@@ -43,67 +43,6 @@ try{
                 r_color='rgb(255,255,0)'
                 width=30
             }
-
-            // if (etichetta===`LUNA${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`SOL${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`FTT${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`AUDIO${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`WRX${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`BTT${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`WIN${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`HOT${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`DENT${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`NKN${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`ZEN${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`MATIC${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`FTM${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`XLM${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
-            // if (etichetta===`MITH${quote}`){
-            //     r_color='rgb(0,0,0)'
-            //     width=30
-            // }
             var punto = {
                 label:etichetta,
                 data:[{x:ascissa,y:ordinata}],
@@ -116,6 +55,15 @@ try{
     var tutteLeCoppie = tuttiIfiles.map((x)=>{
         return x.pair
     }).filter((x)=>{if(x)return x})
+    var puntoOPF ={
+        label:'Optimal Portfolio',
+        data:[{x:portafoglioOttimo.deviazione_standard,y:portafoglioOttimo.rendimento_atteso}],
+        borderColor: 'rgb(0,255,0)',
+        backgroundColor: 'rgb(0,255,0)',
+        borderWidth:35
+    }
+    tuttiIDataSets.push(puntoOPF)
+    tutteLeCoppie.push('Optimal Portfolio')
     const data = {
         labels:tutteLeCoppie,
         datasets: tuttiIDataSets

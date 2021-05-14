@@ -12,7 +12,7 @@ const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUS
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var requiredCandles = 60 //for covariance matrix and optimal portfolio
+var requiredCandles = 60 //for covariance matrix, optimal portfolio and statistics
 
 return new Promise((RES)=>{
   var i=0
@@ -22,7 +22,7 @@ return new Promise((RES)=>{
       console.log("inizio:",i,quoteList.length,z,timeframes.length)
       watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs,pairsToExclude)
       .then(()=>{
-        watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z]).then(()=>{
+        watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z],requiredCandles).then(()=>{
           watcher.topNSharpeRatio(quoteList[i],timeframes[z],bestNSharpes,true)
           .then(()=>{
             watcher.createDir(`Candele_${quoteList[i].toUpperCase()}`).then((percorso)=>{
@@ -88,7 +88,7 @@ return new Promise((RES)=>{
 
 // const startDate = "2021-03-14T16:00:00.000Z"
 // const endDate = "2021-03-20T16:00:00.000Z"
-//watcher.tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,startDate,endDate)
+//watcher.tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,startDate,endDate,requiredCandles)
 
 // var quote="BUSD" //for covariance matrix
 // var time_f ="1d" //for covariance matrix

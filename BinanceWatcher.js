@@ -6,7 +6,7 @@ const _ =require('lodash');
 var ss = require('simple-statistics');
 const PortfolioAllocation = require('portfolio-allocation');
 const { json } = require('express');
-const { resolve } = require('path');
+const { resolve, parse } = require('path');
 
 class BinanceWatcher{
   constructor(){
@@ -147,8 +147,8 @@ class BinanceWatcher{
   expectedReturn(parsedData){
     var returns =[]
     var summedReturns=0
-    for(var i=1;i<parsedData.length;i++){
-      var r=(parsedData[i].Close/parsedData[i-1].Close)-1
+    for(var i=0;i<parsedData.length-1;i++){
+      var r=(parsedData[i].Close/parsedData[i+1].Close)-1
       summedReturns+=r
       returns.push(r)
     }
@@ -158,8 +158,8 @@ class BinanceWatcher{
 
   variance(parsedData,e_r){
     var summedSquaredDifferences=0
-    for(var i=1;i<parsedData.length;i++){
-      var squaredDifference=Math.pow(((parsedData[i].Close/parsedData[i-1].Close)-1)-e_r,2)
+    for(var i=0;i<parsedData.length-1;i++){
+      var squaredDifference=Math.pow(((parsedData[i].Close/parsedData[i+1].Close)-1)-e_r,2)
       summedSquaredDifferences+=squaredDifference
     }
     var variance = summedSquaredDifferences/(parsedData.length-1)
@@ -235,17 +235,29 @@ class BinanceWatcher{
     return ogg
   }
 
-  tutteLeCoppieSintesiStatisticaDescrittiva(quote,timeframe){
+  tutteLeCoppieSintesiStatisticaDescrittiva(quote,timeframe,numeroRichiesto){
     return new Promise((resolve)=>{
       return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
         var TOTALPairs = fs.readdirSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}`))
         var stats =[]
+        var arrayOfAllLengths = []
         for(var i=0;i<TOTALPairs.length;i++){
           var pair = TOTALPairs[i].split('-')[0]
           var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
-          var parsedData = JSON.parse(data)
-          var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
-          stats.push(stat)
+          if(JSON.parse(data).length>=numeroRichiesto){
+            arrayOfAllLengths.push(JSON.parse(data).length)
+          }
+        }
+        var minimumCommonLength = _.min(arrayOfAllLengths)
+        for(var i=0;i<TOTALPairs.length;i++){
+          var pair = TOTALPairs[i].split('-')[0]
+          var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
+          if(JSON.parse(data).length>=numeroRichiesto){
+            var parsedData = JSON.parse(data).reverse().splice(0,minimumCommonLength)
+            var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
+            stat.number_of_records = parsedData.length
+            stats.push(stat)
+          }
         }
         var savename = `all_pairs_${quote.toUpperCase()}_${timeframe}`
         var destinazione=path.join(percorso,savename)
@@ -256,21 +268,32 @@ class BinanceWatcher{
     })
   }
 
-  tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,data_inizio,data_fine){
+  tutteLeCoppieSintesiStatisticaDescrittivaConIntervalloTemporale(quote,timeframe,data_inizio,data_fine,numeroRichiesto){
     return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
       var InitialTOTALPairs = fs.readdirSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}`))
       var TOTALPairs=InitialTOTALPairs
       var stats =[]
+      var arrayOfAllLengths = []
       for(var i=0;i<TOTALPairs.length;i++){
         var pair = TOTALPairs[i].split('-')[0]
         var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
-        var parsedData = JSON.parse(data).map((x)=>{
-          if (new Date(x.formattedTimestamp).getTime()>=new Date(data_inizio).getTime() && new Date(x.formattedTimestamp).getTime()<=new Date(data_fine).getTime()){
-            return x
-          }
-        }).filter((x)=>{if(x)return x})
-        var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
-        stats.push(stat)
+        if(JSON.parse(data).length>=numeroRichiesto){
+          arrayOfAllLengths.push(JSON.parse(data).length)
+        }
+      }
+      var minimumCommonLength = _.min(arrayOfAllLengths)
+      for(var i=0;i<TOTALPairs.length;i++){
+        var pair = TOTALPairs[i].split('-')[0]
+        var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
+        if(JSON.parse(data).length>=numeroRichiesto){
+          var parsedData = JSON.parse(data).reverse().splice(0,minimumCommonLength).map((x)=>{
+            if (new Date(x.formattedTimestamp).getTime()>=new Date(data_inizio).getTime() && new Date(x.formattedTimestamp).getTime()<=new Date(data_fine).getTime()){
+              return x
+            }
+          }).filter((x)=>{if(x)return x})
+          var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
+          stats.push(stat)
+        }
       }
       stats=stats.filter((x)=>{if(x.expected_return)return x})
       var savename = `all_pairs_${quote.toUpperCase()}_${timeframe}_(${data_inizio.split("T").shift()}-${data_fine.split("T").shift()})`
@@ -500,6 +523,13 @@ class BinanceWatcher{
                   csvOPF+='BINANCE:'+soloCoppiaPeso[i]+'\n'
                 }
                 fs.writeFileSync(path.join(p2,`CSV_OPF_${quote}_${tf}.csv`),csvOPF)
+                this.createDir('list_of_returns',p2).then((zz)=>{
+                  var retOPF =''
+                  for(var q=0;q<OPFreturns.length;q++){
+                    retOPF+=OPFreturns[q]+'\n'
+                  }
+                  fs.writeFileSync(path.join(zz,`CSV_OPF_${quote}_${tf}_RETURNS.csv`),retOPF)
+                })
               })
             })
           })
