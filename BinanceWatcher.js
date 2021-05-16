@@ -207,7 +207,21 @@ class BinanceWatcher{
     }
   }
 
-  singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData){
+  downsSideRisk(parsedData,target){
+    try{
+      var badReturns = parsedData.map((x)=>{
+        if(x<target){
+          return x
+        }
+      }).filter((x)=>{if(x)return x})
+      return ss.standardDeviation(badReturns)
+    }
+    catch(e){
+      return null
+    }
+  }
+
+  singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData,target){
     var e_r = this.expectedReturn(parsedData)
     var Variance = this.variance(parsedData,e_r)
     var stDev = this.standardDeviation(Variance)
@@ -221,6 +235,7 @@ class BinanceWatcher{
     var skewness =this.skewness(arrayOfReturns)
     var kurtosis = this.kurtosis(arrayOfReturns)
     var sharpeR = e_r/stDev
+    var downSideRisk = this.downsSideRisk(arrayOfReturns,target)
     var ogg = {
       pair:pair,
       expected_return:e_r,
@@ -230,12 +245,13 @@ class BinanceWatcher{
       value_at_risk:VaR,
       ninetyFifth_percentile:ninetyfifthPerc,
       skewness:skewness,
-      kurtosis:kurtosis
+      kurtosis:kurtosis,
+      downSideRisk:downSideRisk
     }
     return ogg
   }
 
-  tutteLeCoppieSintesiStatisticaDescrittiva(quote,timeframe,numeroRichiesto){
+  tutteLeCoppieSintesiStatisticaDescrittiva(quote,timeframe,numeroRichiesto,target){
     return new Promise((resolve)=>{
       return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
         var TOTALPairs = fs.readdirSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}`))
@@ -254,7 +270,7 @@ class BinanceWatcher{
           var data=fs.readFileSync(path.join(__dirname,`Candele_${quote.toUpperCase()}/${timeframe}/${TOTALPairs[i]}`))
           if(JSON.parse(data).length>=numeroRichiesto){
             var parsedData = JSON.parse(data).reverse().splice(0,minimumCommonLength)
-            var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData)
+            var stat = this.singolaCoppiasintesiStatisticaDescrittiva(pair,parsedData,target)
             stat.number_of_records = parsedData.length
             stats.push(stat)
           }

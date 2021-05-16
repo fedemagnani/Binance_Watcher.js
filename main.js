@@ -5,7 +5,7 @@ const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BUSD","ETH","BTC","BNB"]
-const timeframes =["1w","1d","1M","5m","30m","1h","4h"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+const timeframes =["1h","1d","1M","5m","30m","1w","4h"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
 var pairsToExclude=["SUSD","WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
 const periodCall = 0 //interval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
@@ -13,6 +13,7 @@ var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
 var requiredCandles = 13 //for covariance matrix, optimal portfolio and statistics
+var target = 0 //Target for Downside Risk
 //Quanto deve essere numeroso il campione affinché i risultati siano significativi? più aumenta, peggiori sono i valori e minore è l'opportunità di cogliere le ultime performance di rendimento (perché minore sarà la sensibilità nell'intercettarle)  
 
 return new Promise((RES)=>{
@@ -23,7 +24,7 @@ return new Promise((RES)=>{
       console.log("inizio:",i,quoteList.length,z,timeframes.length)
       watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs,pairsToExclude)
       .then(()=>{
-        watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z],requiredCandles).then(()=>{
+        watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z],requiredCandles,target).then(()=>{
           watcher.topNSharpeRatio(quoteList[i],timeframes[z],bestNSharpes,true)
           .then(()=>{
             watcher.createDir(`Candele_${quoteList[i].toUpperCase()}`).then((percorso)=>{
