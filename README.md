@@ -21,9 +21,9 @@ This will allow you to download the last 1000 candles of each timeframe you've s
 
 For what regards asset allocation, the script will calculate weights for:
 
-☼ Optimal Risky Portfolio
+☼ ***Optimal Risky Portfolio***
 
-☼ Minimum Variance Portfolio
+☼ ***Minimum Variance Portfolio***
 
 You just have to set the number of candles required for each pair in order to be considered in the calculation of the portfolios: you can do it by changing  the `requiredCandles` variable in `main.js` 
 
@@ -31,18 +31,18 @@ By default, this script will compute the optimal portfolio built on any timefram
 
 In addition, if you go to `/Statistica_Descrittiva_UnicaSerie_1d/` you can check the file that summarizes some statistics computed on the daily candles of each USDT pair, The statistics included are:
 
-• Expected Return
+• --Expected Return--
 
-• Variance
+• --Variance--
 
-• Standard Deviation
+• --Standard Deviation--
 
-• Sharpe Ratio
+• --Sharpe Ratio--
 
-• Value at risk (fifth percentile)
+• --Value at risk (fifth percentile)--
 
-• Ninety-fifth percentile
+• --Ninety-fifth percentile--
 
-• Skewness
+• --Skewness--
 
-• Kurtosis
+• --Kurtosis--
