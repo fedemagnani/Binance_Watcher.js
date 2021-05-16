@@ -1,9 +1,10 @@
 # Binance_Watcher.js
-A simple script that allows you to download historical price data from all pairs against BUSD, USDT, BTC, BNB, ETH and to apply simple statistics on it.
-This program requires NodeJS to be installed: https://nodejs.org/it/download/ 
+A simple script that allows you to download historical price data of all pairs against **BUSD**, **USDT**, **BTC**, **BNB**, **ETH** from Binance. This script allows you to get statistics from the price candles and to apply basic concepts of [Modern Portfolio Theory] (https://en.wikipedia.org/wiki/Modern_portfolio_theory#:~:text=Modern%20portfolio%20theory%20(MPT)%2C,a%20given%20level%20of%20risk.&text=It%20uses%20the%20variance%20of%20asset%20prices%20as%20a%20proxy%20for%20risk.) by Harry Markowitz. 
 
-If you want to add other timeframes, just populate the array called "timeframes" at the top of main.js script
-If you want to change the quote assets, just edit the array called "quoteList" at the top of  main.js script
+Candles, portfolio weights and returns are also saved in CSV format.
+
+## Getting started
+This program requires NodeJS to be installed: https://nodejs.org/it/download/ 
 
 STEPS:
 
@@ -17,8 +18,12 @@ STEPS:
 
 4) `node main`
 
+If you want to add other timeframes, just populate the array called `timeframes` at the top of `main.js` script.
+If you want to change the quote assets, just edit the array called `quoteList` at the top of  `main.js` script.
+
 This will allow you to download the last 1000 candles of each timeframe you've set (by default: "5m","30m","1h","4h","1d","1w") of ANY PAIR against the quote assets you've set (by default: "BUSD","USDT","BTC","ETH","BNB"). For example, you can check the daily USDT candles by going to `/Candele_USDT/1d/` and then select the pair you want.
 
+## Asset allocation
 For what regards asset allocation, the script will calculate weights for:
 
 ☼ ***Optimal Risky Portfolio***
@@ -29,20 +34,21 @@ You just have to set the number of candles required for each pair in order to be
 
 By default, this script will compute the optimal portfolio built on any timeframe you've specified and on any pair related to the quote assets you've set. You can check the optimal portfolio weights, expected return, standard deviation and sharpe ratio by going to `/Portafogli_Ottimi/timeframe/example.json`
 
+## Statistics
 In addition, if you go to `/Statistica_Descrittiva_UnicaSerie_1d/` you can check the file that summarizes some statistics computed on the daily candles of each USDT pair, The statistics included are:
 
-• --Expected Return--
+• _Expected Return_
 
-• --Variance--
+• _Variance_
 
-• --Standard Deviation--
+• _Standard Deviation_
 
-• --Sharpe Ratio--
+• _Sharpe Ratio_
 
-• --Value at risk (fifth percentile)--
+• _Value at risk (fifth percentile)_
 
-• --Ninety-fifth percentile--
+• _Ninety-fifth percentile_
 
-• --Skewness--
+• _Skewness_
 
-• --Kurtosis--
+• _Kurtosis_
