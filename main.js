@@ -47,27 +47,30 @@ return new Promise((RES)=>{
               var all_returns = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               var all_returns2 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               var all_returns3 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
+              var all_returns4 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
               watcher.CovarianceMATRIX(all_returns,pairNames,quoteList[i],timeframes[z]).then((matrice_covarianze)=>{
                 watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2).then((portafoglioOttimo)=>{
                   watcher.tuttoInCsv(quoteList[i],timeframes[z]).then((csv)=>{
                     watcher.tuttoInCsv(quoteList[i],timeframes[z],pairNames).then((csv_filtered)=>{
-                      watcher.mvp(quoteList[i],timeframes[z],all_returns3)
-                      .then((mvp)=>{
-                        console.log(mvp)
-                        i+=1
-                        console.log(i,quoteList.length,z,timeframes.length)
-                        if (i===quoteList.length && z===(timeframes.length-1)){
-                          RES()
-                          resolve()
-                        }
-                        if(i===quoteList.length){
-                          i=0
-                          z+=1
-                          reject()
-                        }
-                        else{
-                          reject()
-                        }
+                      watcher.mvp(quoteList[i],timeframes[z],all_returns3).then((mvp)=>{
+                        watcher.portafoglioEquiponderato(quoteList[i],timeframes[z],all_returns4)
+                        .then((equiponderato)=>{
+                          console.log(mvp)
+                          i+=1
+                          console.log(i,quoteList.length,z,timeframes.length)
+                          if (i===quoteList.length && z===(timeframes.length-1)){
+                            RES()
+                            resolve()
+                          }
+                          if(i===quoteList.length){
+                            i=0
+                            z+=1
+                            reject()
+                          }
+                          else{
+                            reject()
+                          }
+                        })
                       })
                     })
                   })

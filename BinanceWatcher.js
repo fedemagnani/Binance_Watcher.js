@@ -728,6 +728,141 @@ class BinanceWatcher{
       }
     })
   }
+  
+  portafoglioEquiponderato(quote,tf,arrayOfReturns){ //shoutout to lequant40
+    return new Promise((resolve)=>{
+      try{
+        var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
+        var coppie = Object.keys(matriceCovarianza)
+        var arrayoflengths = arrayOfReturns.map((x)=>{
+          return x.length
+        }).filter((x)=>{if(x)return x})
+        var minimumCommonLength=_.min(arrayoflengths)
+        arrayOfReturns=arrayOfReturns.map((x)=>{
+            return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+        })//.filter((x)=>{if(x) return x})
+        // console.log(arrayOfReturns) //ok
+        var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
+        romanCovMatr.coppie=coppie
+        var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
+        var pesiUguali = []
+        for(var i=0;i<coppie.length;i++){
+          pesiUguali.push(1/coppie.length)
+        }
+        var rendimentiPesati = []
+        for(var z=0;z<arrayOfReturns.length;z++){
+          var seriePesata =arrayOfReturns[z].map((x)=>{
+            return x*pesiUguali[z]
+          }) 
+          rendimentiPesati.push(seriePesata)
+        }
+        var sameWeightReturns = rendimentiPesati.reduce(function(a, b){ //succesione dei rendimenti del portafoglio ottimo
+          return a.map(function(v,i){
+              return v+b[i];
+          });
+        });
+        var EquiponderatoerroreStandard = ss.sampleStandardDeviation(sameWeightReturns)/Math.pow(sameWeightReturns.length,0.5)
+        var vettorepesiUguali={}
+        var arraypesiUguali = []
+        for (var i=0;i<coppie.length;i++){
+          var w = {
+            pair:coppie[i],
+            weight:pesiUguali[i]
+          }
+          vettorepesiUguali[coppie[i]]=pesiUguali[i]+`; (${Math.round(pesiUguali[i]*Math.pow(10,4))/Math.pow(10,2)}%)`;
+          arraypesiUguali.push(w)
+        }
+    
+        var rendimentoAttesoPortafoglio = 0
+        for(var i=0;i<pesiUguali.length;i++){
+            var prodotto = pesiUguali[i]*Array.from(romanE.data)[i]
+            rendimentoAttesoPortafoglio+=prodotto
+        }
+        var statT=rendimentoAttesoPortafoglio/EquiponderatoerroreStandard
+        var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
+        var arrayDiCOvarianze = Object.values(matriceCovarianza)
+        for(var i=0;i<arrayDiCOvarianze.length;i++){
+            var somma=0
+            for(var z=0;z<arrayDiCOvarianze[i].length;z++){
+                var prod=(arrayDiCOvarianze[i][z])*pesiUguali[z]
+                somma+=prod
+            }
+            primaMatriceProdotto.push(somma)
+        }
+        var deviazioneStandardPort = 0
+        for(var i=0;i<primaMatriceProdotto.length;i++){
+            deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiUguali[i])
+        }
+        deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
+        var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
+        var EquiponderatoPortfolio ={
+            pesi:vettorepesiUguali,
+            statisticaT_rendimento_atteso:statT,
+            numerosità_campione:sameWeightReturns.length,
+            rendimento_atteso:rendimentoAttesoPortafoglio,
+            deviazione_standard:deviazioneStandardPort,
+            sharpe_ratio:sharpe_ratio
+        }
+        var sintesi = {
+          rendimento_atteso:rendimentoAttesoPortafoglio,
+          deviazione_standard:deviazioneStandardPort,
+          sharpe_ratio:sharpe_ratio
+        }
+        arraypesiUguali.push(sintesi)
+        var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Equiponderati/${tf}/Equiponderato_${quote}_${tf}.json`))
+        if(esistePortafPrecedente){
+          var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Equiponderati/${tf}/Equiponderato_${quote}_${tf}.json`)))
+          if (PortPrec.pesi){
+            var assetNuovi = Object.keys(EquiponderatoPortfolio.pesi)
+            var pesiNuovi = Object.values(EquiponderatoPortfolio.pesi)
+            var assetVecchi = Object.keys(PortPrec.pesi)
+            var pesiVecchi = Object.keys(PortPrec.pesi)
+            for(var i=0; i<assetNuovi.length; i++){
+              if(EquiponderatoPortfolio.pesi[assetVecchi[i]]){
+                EquiponderatoPortfolio.pesi[assetVecchi[i]]=EquiponderatoPortfolio.pesi[assetVecchi[i]]+`; ${Math.round(Number(Number(EquiponderatoPortfolio.pesi[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
+              }
+            }
+          }
+        }
+        this.createDir('Portafogli_Equiponderati').then((perc)=>{
+          this.createDir(tf,perc).then((percorso)=>{
+            fs.writeFileSync(path.join(percorso,`Equiponderato_${quote}_${tf}.json`),JSON.stringify(EquiponderatoPortfolio))
+            this.createDir('Formato_Stealth',percorso).then((p)=>{
+              fs.writeFileSync(path.join(p,`Equiponderato_${quote}_${tf}_stealth.json`),JSON.stringify(arraypesiUguali))
+              this.createDir('CSV',percorso).then((p2)=>{
+                var csvEquiponderato = ''
+                var soloCoppiaPeso = arraypesiUguali.map((x)=>{
+                  if (x.weight){
+                    return x.pair+";"+x.weight
+                  }
+                }).filter((x)=>{if(x)return x})
+                for(var i=0;i<soloCoppiaPeso.length;i++){
+                  csvEquiponderato+='BINANCE:'+soloCoppiaPeso[i]+'\n'
+                }
+                fs.writeFileSync(path.join(p2,`CSV_Equiponderato_${quote}_${tf}.csv`),csvEquiponderato)
+                this.createDir('list_of_returns',p2).then((zz)=>{
+                  var retEquiponderato =''
+                  for(var q=0;q<sameWeightReturns.length;q++){
+                    retEquiponderato+=sameWeightReturns[q]+'\n'
+                  }
+                  fs.writeFileSync(path.join(zz,`CSV_Equiponderato_${quote}_${tf}_RETURNS.csv`),retEquiponderato)
+                })
+              })
+            })
+          })
+        })
+        resolve(EquiponderatoPortfolio)
+      }catch(e){
+        console.log(e)
+        this.createDir('Portafogli_Equiponderati').then((perc)=>{
+          this.createDir(tf,perc).then((percorso)=>{
+            fs.writeFileSync(path.join(percorso,`Equiponderato_${quote}_${tf}.json`),JSON.stringify(e))
+          })
+        })
+        resolve(e)
+      }
+    })
+  }
 
 }
 

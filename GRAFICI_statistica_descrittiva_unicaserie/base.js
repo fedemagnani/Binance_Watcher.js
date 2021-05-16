@@ -11,6 +11,8 @@ try{
     var minyyy=-0.003
     var maxxxx=0.1
     var maxyyy=0.003
+    // var MVP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Ottimi/${timeframe}/OPF_${quote}_${timeframe}.json`)))
+
     var portafoglioOttimo = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Ottimi/${timeframe}/OPF_${quote}_${timeframe}.json`)))
     var tuttiIfiles = JSON.parse(fs.readFileSync(path.join(`../Statistica_Descrittiva_UnicaSerie_${timeframe}/all_pairs_${quote}_${timeframe}`)))
     var tuttiIDataSets = tuttiIfiles.map((x)=>{
