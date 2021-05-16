@@ -1,5 +1,5 @@
 # Binance_Watcher.js
-A simple script that allows you to download historical price data of all pairs against **BUSD**, **USDT**, **BTC**, **BNB**, **ETH** from Binance. This script allows you to get statistics from the price candles and to apply basic concepts of [Modern Portfolio Theory] (https://en.wikipedia.org/wiki/Modern_portfolio_theory#:~:text=Modern%20portfolio%20theory%20(MPT)%2C,a%20given%20level%20of%20risk.&text=It%20uses%20the%20variance%20of%20asset%20prices%20as%20a%20proxy%20for%20risk.) by Harry Markowitz. 
+A simple script that allows you to download historical price data of all pairs against **BUSD**, **USDT**, **BTC**, **BNB**, **ETH** from Binance. This script allows you to get statistics from the price candles and to apply basic concepts of [Modern Portfolio Theory](https://en.wikipedia.org/wiki/Modern_portfolio_theory#:~:text=Modern%20portfolio%20theory%20(MPT)%2C,a%20given%20level%20of%20risk.&text=It%20uses%20the%20variance%20of%20asset%20prices%20as%20a%20proxy%20for%20risk.) by Harry Markowitz. 
 
 Candles, portfolio weights and returns are also saved in CSV format.
 
