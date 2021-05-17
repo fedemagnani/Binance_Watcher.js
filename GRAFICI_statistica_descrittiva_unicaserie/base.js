@@ -4,15 +4,20 @@ try{
     const $ = require('jquery');
     const fs = require('fs')
     const path = require('path')
-    const quote ="USDT"
-    const timeframe = "1d"
+    const quote ="BTC"
+    const timeframe = "1w"
 
     var minxxx=0
     var minyyy=-0.003
     var maxxxx=0.1
     var maxyyy=0.003
-    // var MVP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Ottimi/${timeframe}/OPF_${quote}_${timeframe}.json`)))
-
+    var MVP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Varianza_Minima/${timeframe}/MVP_${quote}_${timeframe}.json`)))
+    var Portafogli_Frontiere_Efficienti_Folder = fs.readdirSync(path.join(__dirname,`../Portafogli_Frontiere_Efficienti/${timeframe}/${quote}`))
+    var frontieraEficiente = Portafogli_Frontiere_Efficienti_Folder.map((x)=>{
+        var w = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Frontiere_Efficienti/${timeframe}/${quote}/${x}`)))
+        w.name = x
+        return w
+    })
     var portafoglioOttimo = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Ottimi/${timeframe}/OPF_${quote}_${timeframe}.json`)))
     var tuttiIfiles = JSON.parse(fs.readFileSync(path.join(`../Statistica_Descrittiva_UnicaSerie_${timeframe}/all_pairs_${quote}_${timeframe}`)))
     var tuttiIDataSets = tuttiIfiles.map((x)=>{
@@ -66,11 +71,30 @@ try{
     }
     tuttiIDataSets.push(puntoOPF)
     tutteLeCoppie.push('Optimal Portfolio')
+    var puntoMVP = {
+        label:'Minimum Variance Portfolio',
+        data:[{x:MVP.deviazione_standard,y:MVP.rendimento_atteso}],
+        borderColor: 'rgb(255, 0, 255)',
+        backgroundColor: 'rgb(255, 0, 255)',
+        borderWidth:35
+    }
+    tuttiIDataSets.push(puntoMVP)
+    tutteLeCoppie.push('Minimum Variance Portfolio')
+    frontieraEficiente.map((x)=>{
+        tutteLeCoppie.push(x.name)
+        var puntoEff = {
+            label:x.name,
+            data:[{x:x.standard_deviation,y:x.expected_return}],
+            borderColor: 'rgb(0,0,0)',
+            backgroundColor: 'rgb(0,0,0)',
+            borderWidth:1
+        }
+        tuttiIDataSets.push(puntoEff)
+    })
     const data = {
         labels:tutteLeCoppie,
         datasets: tuttiIDataSets
     };
-
     $('#maximum_y').val(maxyyy);
     $('#maximum_x').val(maxxxx);
     $('#minimum_y').val(minyyy);

@@ -880,6 +880,56 @@ class BinanceWatcher{
     })
   }
 
+  efficientFrontier(quote,tf,arrayOfReturns){ //shoutout to lequant40
+    return new Promise((resolve)=>{
+      try{
+        var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
+        var coppie = Object.keys(matriceCovarianza)
+        var arrayoflengths = arrayOfReturns.map((x)=>{
+          return x.length
+        }).filter((x)=>{if(x)return x})
+        var minimumCommonLength=_.min(arrayoflengths)
+        arrayOfReturns=arrayOfReturns.map((x)=>{
+            return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+        })//.filter((x)=>{if(x) return x})
+        // console.log(arrayOfReturns) //ok
+        var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
+        romanCovMatr.coppie=coppie
+        var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
+        var efficientF = PortfolioAllocation.meanVarianceEfficientFrontierPortfolios(romanE,romanCovMatr)
+        var portafogliEfficienti = efficientF.map((x)=>{
+          var w ={}
+          x.shift().map((x,i)=>{
+            w[coppie[i]]=x
+          })
+          
+          var rendimentoAtteso = x.shift()
+          var standard_deviation = x.shift()
+          var sharpe = rendimentoAtteso/standard_deviation
+          return {
+            weights: w,
+            numerosità_campione:arrayOfReturns.length,
+            expected_return: rendimentoAtteso,
+            standard_deviation:standard_deviation,
+            sharpe_ratio:sharpe
+          }
+        })
+        this.createDir('Portafogli_Frontiere_Efficienti').then((perc)=>{
+          this.createDir(tf,perc).then((percorso)=>{
+            this.createDir(quote,percorso).then((perccc)=>{
+              for(var i=0;i<portafogliEfficienti.length;i++){
+                fs.writeFileSync(path.join(perccc,`Eficient_PF${i}_${quote}_${tf}.json`),JSON.stringify(portafogliEfficienti[i]))
+              }
+            })
+          })
+        })
+        resolve(portafogliEfficienti)
+      }catch(e){
+        resolve(e)
+      }
+    })
+  }
+
 }
 
 module.exports=BinanceWatcher
