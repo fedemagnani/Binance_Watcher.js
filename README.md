@@ -38,6 +38,16 @@ By default, this script will compute the optimal portfolio built on any timefram
 
 ![Frontier](https://github.com/fedemagnani/Binance_Watcher.js/blob/main/assets/efficientFrontierALT-BTC_weekly.png?raw=true)
 
+In order to see graphs like this you need to change directory by typing on the command line: 
+
+`cd GRAFICI_statistica_descrittiva_unicaserie`
+
+Then, you need to edit the `quote` and `timeframe` variables in `base.js` in order to have data from the desired quote asset and timeframe.
+
+Finally, type on the command line
+
+`electron app`
+
 ## Statistics
 In addition, if you go to `/Statistica_Descrittiva_UnicaSerie_1d/` you can check the file that summarizes some statistics computed on the daily candles of each USDT pair, The statistics included are:
 
