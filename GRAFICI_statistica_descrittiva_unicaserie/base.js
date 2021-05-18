@@ -4,8 +4,8 @@ try{
     const $ = require('jquery');
     const fs = require('fs')
     const path = require('path')
-    const quote ="BTC"
-    const timeframe = "1w"
+    const quote ="ETH"
+    const timeframe = "30m"
 
     var minxxx=0
     var minyyy=-0.003

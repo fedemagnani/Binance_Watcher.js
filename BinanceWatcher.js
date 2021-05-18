@@ -319,35 +319,6 @@ class BinanceWatcher{
     })
   }
 
-  efficientFrontier(quote,timeframe,truncAmount,data_inizio,data_fine){
-    return new Promise((resolve)=>{
-      return this.createDir(`Statistica_Descrittiva_UnicaSerie_${timeframe}`).then((percorso)=>{
-        // var file = `all_pairs_${quote.toUpperCase()}_${timeframe}`
-        // if (data_fine&&data_inizio){
-        //   file=`all_pairs_${quote.toUpperCase()}_${timeframe}_(${data_inizio.split("T").shift()}-${data_fine.split("T").shift()})`
-        // }
-        // var data = fs.readFileSync(path.join(percorso,file))
-        // var parsedData = JSON.parse(data)
-        // var sortedData = _.sortBy(parsedData,["standard_deviation"])
-        // var badPairs = []
-
-        // for(var i=0;i<sortedData.length;i++){
-        //   var n_exim_pair = sortedData[i]
-        //   sortedData.map((x)=>{
-        //     if (this.round(x.standard_deviation,truncAmount)>this.round(n_exim_pair.standard_deviation,truncAmount)&&this.round(x.expected_return,truncAmount)<this.round(n_exim_pair.expected_return,truncAmount)){
-        //       badPairs.push(x)
-        //     }
-        //   })
-        // }
-        // console.log(badPairs.length)
-        // var efficientPairs=_.differenceBy(sortedData,badPairs,"pairs")
-        // fs.writeFileSync(path.join(percorso,`efficient_frontier_${quote}_${timeframe}`),JSON.stringify(efficientPairs))
-        // resolve(efficientPairs)
-        resolve(true)
-      })
-    })
-  }
-
   topNSharpeRatio(quote,timeframe,n,synth){
     return new Promise((resolve)=>{
       this.createDir("Sharpes").then((perc)=>{
@@ -373,24 +344,6 @@ class BinanceWatcher{
         resolve(bestSharpes)
       })
     })
-  }
-
-  arrayOfALLReturnsofALLPAirs(arrayOfAllCandles,moreThanNCandles){
-    arrayOfAllCandles=arrayOfAllCandles.map((x)=>{
-        if(x.length>moreThanNCandles){
-            return x
-        }
-    }).filter((x)=>{if(x)return x})
-    var arrayOfAllReturns = []
-    for(var i=0; i<arrayOfAllCandles.length;i++){
-        var arrayOfReturns = []
-        for(var j=1;j<arrayOfAllCandles[i].length;j++){
-            var r = ((arrayOfAllCandles[i][j])/(arrayOfAllCandles[i][j-1]))-1
-            arrayOfReturns.push(r)
-        }
-        arrayOfAllReturns.push(arrayOfReturns)
-    }
-    return arrayOfAllReturns
   }
 
   CovarianceMATRIX(arrayOfReturns,arrayofAllPairs,quote,time_f){
@@ -430,6 +383,24 @@ class BinanceWatcher{
     return filteredPairs
   }
 
+  arrayOfALLReturnsofALLPAirs(arrayOfAllCandles,moreThanNCandles){
+    arrayOfAllCandles=arrayOfAllCandles.map((x)=>{
+        if(x.length>moreThanNCandles){
+            return x
+        }
+    }).filter((x)=>{if(x)return x})
+    var arrayOfAllReturns = []
+    for(var i=0; i<arrayOfAllCandles.length;i++){
+        var arrayOfReturns = []
+        for(var j=1;j<arrayOfAllCandles[i].length;j++){
+            var r = ((arrayOfAllCandles[i][j])/(arrayOfAllCandles[i][j-1]))-1
+            arrayOfReturns.push(r)
+        }
+        arrayOfAllReturns.push(arrayOfReturns)
+    }
+    return arrayOfAllReturns
+  }
+
   portafoglioOttimo(quote,tf,arrayOfReturns){ //shoutout to lequant40
     return new Promise((resolve)=>{
       try{
@@ -442,7 +413,6 @@ class BinanceWatcher{
         arrayOfReturns=arrayOfReturns.map((x)=>{
             return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
         })//.filter((x)=>{if(x) return x})
-        // console.log(arrayOfReturns) //ok
         var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
         romanCovMatr.coppie=coppie
         var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
@@ -560,56 +530,6 @@ class BinanceWatcher{
         })
         resolve(e)
       }
-    })
-  }
-
-  tuttoInCsv(quote,tf,listaCoppie){//closes will be sorted from the most recent ones; listacoppie can be undefined
-    return new Promise((resolve)=>{
-      this.createDir("CSV").then((perc)=>{
-        this.createDir(tf,perc).then((percorso)=>{
-          var percorsoFile = path.join(__dirname,`Candele_${quote.toUpperCase()}/${tf}`)
-          var tuttifiles = fs.readdirSync(percorsoFile)
-          if (listaCoppie){
-            tuttifiles=tuttifiles.map((x)=>{
-              if(_.includes(listaCoppie,x.split("-")[0])){
-                return x
-              }
-            }).filter((x)=>{if(x)return x})
-          }
-          var ob = {}
-          for(var i=0;i<tuttifiles.length;i++){
-            var data = fs.readFileSync(path.join(percorsoFile,tuttifiles[i]))
-            var parsedData=JSON.parse(data)
-            var justClose = parsedData.map((x)=>{
-              return x.Close
-            })
-            ob[tuttifiles[i].split("-")[0]]=justClose
-          }
-          // console.log(ob)
-          var keys = Object.keys(ob).toString()+'\n'
-          var arrayOfLengths = Object.values(ob).map((x)=>{
-            return x.length
-          })
-          var maximumLength = _.max(arrayOfLengths)
-          var csv = keys
-          for(var i=0;i<maximumLength;i++){
-            var text=""
-            Object.values(ob).map((x)=>{
-              var t =x.pop()
-              if(!t){
-                t=""
-              }
-              text += t+","
-            })
-            csv+=text+'\n'
-          }
-          var nomeFile = listaCoppie?`CSV_${quote}_${tf}_selectedPairs(OPF)`:`CSV_${quote}_${tf}`
-          fs.writeFileSync(path.join(percorso,nomeFile),csv)
-          // return ob
-          resolve(csv)
-          //crea il csv partendo da tuttifiles
-        })
-      })
     })
   }
 
@@ -927,6 +847,56 @@ class BinanceWatcher{
       }catch(e){
         resolve(e)
       }
+    })
+  }
+
+    tuttoInCsv(quote,tf,listaCoppie){//closes will be sorted from the most recent ones; listacoppie can be undefined
+    return new Promise((resolve)=>{
+      this.createDir("CSV").then((perc)=>{
+        this.createDir(tf,perc).then((percorso)=>{
+          var percorsoFile = path.join(__dirname,`Candele_${quote.toUpperCase()}/${tf}`)
+          var tuttifiles = fs.readdirSync(percorsoFile)
+          if (listaCoppie){
+            tuttifiles=tuttifiles.map((x)=>{
+              if(_.includes(listaCoppie,x.split("-")[0])){
+                return x
+              }
+            }).filter((x)=>{if(x)return x})
+          }
+          var ob = {}
+          for(var i=0;i<tuttifiles.length;i++){
+            var data = fs.readFileSync(path.join(percorsoFile,tuttifiles[i]))
+            var parsedData=JSON.parse(data)
+            var justClose = parsedData.map((x)=>{
+              return x.Close
+            })
+            ob[tuttifiles[i].split("-")[0]]=justClose
+          }
+          // console.log(ob)
+          var keys = Object.keys(ob).toString()+'\n'
+          var arrayOfLengths = Object.values(ob).map((x)=>{
+            return x.length
+          })
+          var maximumLength = _.max(arrayOfLengths)
+          var csv = keys
+          for(var i=0;i<maximumLength;i++){
+            var text=""
+            Object.values(ob).map((x)=>{
+              var t =x.pop()
+              if(!t){
+                t=""
+              }
+              text += t+","
+            })
+            csv+=text+'\n'
+          }
+          var nomeFile = listaCoppie?`CSV_${quote}_${tf}_selectedPairs(OPF)`:`CSV_${quote}_${tf}`
+          fs.writeFileSync(path.join(percorso,nomeFile),csv)
+          // return ob
+          resolve(csv)
+          //crea il csv partendo da tuttifiles
+        })
+      })
     })
   }
 
