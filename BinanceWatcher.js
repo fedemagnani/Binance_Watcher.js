@@ -121,25 +121,18 @@ class BinanceWatcher{
   fetchCandlesFromAllPairs(quote,timeframe,periodCall,activePairs,justTrading,pairsToExclude){
     return new Promise((resolve)=>{
       console.log("Collecting Candles...")
-      this.getAllPairs(quote,activePairs,justTrading,pairsToExclude).then((tutteLecoppie)=>{
-        var i=0
-        var p = ()=> new Promise((res)=>{
-          console.log(`Pairs left ${quote}_${timeframe}:`,tutteLecoppie.length-(i+1),`(current:${tutteLecoppie[i]})`)
-          if(i+1>=tutteLecoppie.length){
-            console.log("Done! Collected candles from",tutteLecoppie.length,"pairs")
-            resolve()
-          }
-          this.getCandles(tutteLecoppie[i],quote,timeframe).then(()=>{
-            i+=1
+      this.getAllPairs(quote,activePairs,justTrading,pairsToExclude).then(async(tutteLecoppie)=>{
+        var p = (z)=> new Promise((res)=>{
+          console.log(`Pairs left ${quote}_${timeframe}:`,tutteLecoppie.length-(z+1),`(current:${tutteLecoppie[z]})`)
+          this.getCandles(tutteLecoppie[z],quote,timeframe).then(()=>{
             res()
           })
-        }).then(()=>{
-          setTimeout(()=>{
-            if(i!=tutteLecoppie.length)
-            p()
-          },periodCall)            
         })
-        return p()
+        for(var z=0;z<tutteLecoppie.length;z++){
+          await p(z)
+        }
+        console.log("Done! Collected candles from",tutteLecoppie.length,"pairs")
+        resolve()
       })
     })
   }
@@ -800,6 +793,138 @@ class BinanceWatcher{
     })
   }
 
+  crp(quote,tf,arrayOfReturns){ //shoutout to lequant40
+    return new Promise((resolve)=>{
+      try{
+        var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
+        var coppie = Object.keys(matriceCovarianza)
+        var arrayoflengths = arrayOfReturns.map((x)=>{
+          return x.length
+        }).filter((x)=>{if(x)return x})
+        var minimumCommonLength=_.min(arrayoflengths)
+        arrayOfReturns=arrayOfReturns.map((x)=>{
+            return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+        })//.filter((x)=>{if(x) return x})
+        // console.log(arrayOfReturns) //ok
+        var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
+        romanCovMatr.coppie=coppie
+        var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
+        var pesiCRP = PortfolioAllocation.clusterRiskParityWeights(romanCovMatr)
+        var rendimentiPesati = []
+        for(var z=0;z<arrayOfReturns.length;z++){
+          var seriePesata =arrayOfReturns[z].map((x)=>{
+            return x*pesiCRP[z]
+          }) 
+          rendimentiPesati.push(seriePesata)
+        }
+        var CRPreturns = rendimentiPesati.reduce(function(a, b){ //succesione dei rendimenti del portafoglio ottimo
+          return a.map(function(v,i){
+              return v+b[i];
+          });
+        });
+        var CRPerroreStandard = ss.sampleStandardDeviation(CRPreturns)/Math.pow(CRPreturns.length,0.5)
+        var vettorepesiCRP={}
+        var arrayPesiCRP = []
+        for (var i=0;i<coppie.length;i++){
+          var w = {
+            pair:coppie[i],
+            weight:pesiCRP[i]
+          }
+          vettorepesiCRP[coppie[i]]=pesiCRP[i]+`; (${Math.round(pesiCRP[i]*Math.pow(10,4))/Math.pow(10,2)}%)`;
+          arrayPesiCRP.push(w)
+        }
+    
+        var rendimentoAttesoPortafoglio = 0
+        for(var i=0;i<pesiCRP.length;i++){
+            var prodotto = pesiCRP[i]*Array.from(romanE.data)[i]
+            rendimentoAttesoPortafoglio+=prodotto
+        }
+        var statT=rendimentoAttesoPortafoglio/CRPerroreStandard
+        var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
+        var arrayDiCOvarianze = Object.values(matriceCovarianza)
+        for(var i=0;i<arrayDiCOvarianze.length;i++){
+            var somma=0
+            for(var z=0;z<arrayDiCOvarianze[i].length;z++){
+                var prod=(arrayDiCOvarianze[i][z])*pesiCRP[z]
+                somma+=prod
+            }
+            primaMatriceProdotto.push(somma)
+        }
+        var deviazioneStandardPort = 0
+        for(var i=0;i<primaMatriceProdotto.length;i++){
+            deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiCRP[i])
+        }
+        deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
+        var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
+        var CRPPortfolio ={
+            pesi:vettorepesiCRP,
+            statisticaT_rendimento_atteso:statT,
+            numerosità_campione:CRPreturns.length,
+            rendimento_atteso:rendimentoAttesoPortafoglio,
+            deviazione_standard:deviazioneStandardPort,
+            sharpe_ratio:sharpe_ratio
+        }
+        var sintesi = {
+          rendimento_atteso:rendimentoAttesoPortafoglio,
+          deviazione_standard:deviazioneStandardPort,
+          sharpe_ratio:sharpe_ratio
+        }
+        arrayPesiCRP.push(sintesi)
+        var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_cluster_risk_parity/${tf}/CRP_${quote}_${tf}.json`))
+        if(esistePortafPrecedente){
+          var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_cluster_risk_parity/${tf}/CRP_${quote}_${tf}.json`)))
+          if (PortPrec.pesi){
+            var assetNuovi = Object.keys(CRPPortfolio.pesi)
+            var pesiNuovi = Object.values(CRPPortfolio.pesi)
+            var assetVecchi = Object.keys(PortPrec.pesi)
+            var pesiVecchi = Object.keys(PortPrec.pesi)
+            for(var i=0; i<assetNuovi.length; i++){
+              if(CRPPortfolio.pesi[assetVecchi[i]]){
+                CRPPortfolio.pesi[assetVecchi[i]]=CRPPortfolio.pesi[assetVecchi[i]]+`; ${Math.round(Number(Number(CRPPortfolio.pesi[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
+              }
+            }
+          }
+        }
+        this.createDir('Portafogli_cluster_risk_parity').then((perc)=>{
+          this.createDir(tf,perc).then((percorso)=>{
+            fs.writeFileSync(path.join(percorso,`CRP_${quote}_${tf}.json`),JSON.stringify(CRPPortfolio))
+            this.createDir('Formato_Stealth',percorso).then((p)=>{
+              fs.writeFileSync(path.join(p,`CRP_${quote}_${tf}_stealth.json`),JSON.stringify(arrayPesiCRP))
+              this.createDir('CSV',percorso).then((p2)=>{
+                var csvCRP = ''
+                var soloCoppiaPeso = arrayPesiCRP.map((x)=>{
+                  if (x.weight){
+                    return x.pair+";"+x.weight
+                  }
+                }).filter((x)=>{if(x)return x})
+                for(var i=0;i<soloCoppiaPeso.length;i++){
+                  csvCRP+='BINANCE:'+soloCoppiaPeso[i]+'\n'
+                }
+                fs.writeFileSync(path.join(p2,`CSV_CRP_${quote}_${tf}.csv`),csvCRP)
+                this.createDir('list_of_returns',p2).then((zz)=>{
+                  var retCRP =''
+                  for(var q=0;q<CRPreturns.length;q++){
+                    retCRP+=CRPreturns[q]+'\n'
+                  }
+                  fs.writeFileSync(path.join(zz,`CSV_CRP_${quote}_${tf}_RETURNS.csv`),retCRP)
+                })
+              })
+            })
+          })
+        })
+        resolve(CRPPortfolio)
+      }catch(e){
+        console.log(e)
+        this.createDir('Portafogli_cluster_risk_parity').then((perc)=>{
+          this.createDir(tf,perc).then((percorso)=>{
+            fs.writeFileSync(path.join(percorso,`CRP_${quote}_${tf}.json`),JSON.stringify(e))
+          })
+        })
+        resolve(e)
+      }
+    })
+  }
+
   efficientFrontier(quote,tf,arrayOfReturns){ //shoutout to lequant40
     return new Promise((resolve)=>{
       try{
@@ -850,7 +975,7 @@ class BinanceWatcher{
     })
   }
 
-    tuttoInCsv(quote,tf,listaCoppie){//closes will be sorted from the most recent ones; listacoppie can be undefined
+  tuttoInCsv(quote,tf,listaCoppie){//closes will be sorted from the most recent ones; listacoppie can be undefined
     return new Promise((resolve)=>{
       this.createDir("CSV").then((perc)=>{
         this.createDir(tf,perc).then((percorso)=>{

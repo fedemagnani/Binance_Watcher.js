@@ -4,13 +4,14 @@ try{
     const $ = require('jquery');
     const fs = require('fs')
     const path = require('path')
-    const quote ="ETH"
-    const timeframe = "30m"
+    const quote ="USDT"
+    const timeframe = "1d"
 
     var minxxx=0
     var minyyy=-0.003
     var maxxxx=0.1
     var maxyyy=0.003
+    var CRP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_cluster_risk_parity/${timeframe}/CRP_${quote}_${timeframe}.json`)))
     var MVP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Varianza_Minima/${timeframe}/MVP_${quote}_${timeframe}.json`)))
     var Portafogli_Frontiere_Efficienti_Folder = fs.readdirSync(path.join(__dirname,`../Portafogli_Frontiere_Efficienti/${timeframe}/${quote}`))
     var frontieraEficiente = Portafogli_Frontiere_Efficienti_Folder.map((x)=>{
@@ -80,6 +81,18 @@ try{
     }
     tuttiIDataSets.push(puntoMVP)
     tutteLeCoppie.push('Minimum Variance Portfolio')
+
+    var puntoCRP = {
+        label:'Cluster Risk Parity Portfolio',
+        data:[{x:CRP.deviazione_standard,y:CRP.rendimento_atteso}],
+        pointStyle:"cross",
+        borderColor: 'rgb(255, 0, 255)',
+        backgroundColor: 'rgb(255, 0, 255)',
+        borderWidth:20
+    }
+    tuttiIDataSets.push(puntoCRP)
+    tutteLeCoppie.push('Cluster Risk Parity Portfolio')
+
     frontieraEficiente.map((x)=>{
         tutteLeCoppie.push(x.name)
         var puntoEff = {

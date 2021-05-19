@@ -5,8 +5,8 @@ const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BUSD","ETH","BTC","BNB"]
-const timeframes =["30m","1d","1w","1h","5m","4h","1M"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-var pairsToExclude=["OG","BAR","PSG","ASR","ATM","SUSD","WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
+const timeframes =["1d","1d","1w","1h","5m","4h","1M"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+var pairsToExclude=["JUV","ACM","OG","BAR","PSG","ASR","ATM","SUSD","WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
 const periodCall = 0 //interval between one api call and the next one
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
@@ -52,29 +52,32 @@ return new Promise((RES)=>{
                 var all_returns3 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
                 var all_returns4 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
                 var all_returns5 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
+                var all_returns6 = watcher.arrayOfALLReturnsofALLPAirs(all_candles,requiredCandles)
                 watcher.CovarianceMATRIX(all_returns,pairNames,quoteList[i],timeframes[z]).then((matrice_covarianze)=>{
                   watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2).then((portafoglioOttimo)=>{
                     watcher.tuttoInCsv(quoteList[i],timeframes[z]).then((csv)=>{
                       watcher.tuttoInCsv(quoteList[i],timeframes[z],pairNames).then((csv_filtered)=>{
                         watcher.mvp(quoteList[i],timeframes[z],all_returns3).then((mvp)=>{
                           watcher.portafoglioEquiponderato(quoteList[i],timeframes[z],all_returns4).then((equiponderato)=>{
-                            watcher.efficientFrontier(quoteList[i],timeframes[z],all_returns5)
-                            .then((efficientFrontier)=>{
-                              console.log(portafoglioOttimo)
-                              i+=1
-                              console.log(i,quoteList.length,z,timeframes.length)
-                              if (i===quoteList.length && z===(timeframes.length-1)){
-                                RES()
-                                resolve()
-                              }
-                              if(i===quoteList.length){
-                                i=0
-                                z+=1
-                                reject()
-                              }
-                              else{
-                                reject()
-                              }
+                            watcher.efficientFrontier(quoteList[i],timeframes[z],all_returns5).then((efficientFrontier)=>{
+                              watcher.crp(quoteList[i],timeframes[z],all_returns6)
+                              .then((crp)=>{
+                                console.log(portafoglioOttimo)
+                                i+=1
+                                console.log(i,quoteList.length,z,timeframes.length)
+                                if (i===quoteList.length && z===(timeframes.length-1)){
+                                  RES()
+                                  resolve()
+                                }
+                                if(i===quoteList.length){
+                                  i=0
+                                  z+=1
+                                  reject()
+                                }
+                                else{
+                                  reject()
+                                }
+                              })
                             })
                           })
                         })
@@ -85,7 +88,7 @@ return new Promise((RES)=>{
               })
             })
           })
-        },5000)
+        },2500)
       })
     }).then(()=>{console.log("All good")})
     .catch(()=>{
