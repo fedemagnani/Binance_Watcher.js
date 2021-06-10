@@ -8,9 +8,9 @@ try{
     const timeframe = "1d"
 
     var minxxx=0
-    var minyyy=-0.003
-    var maxxxx=0.1
-    var maxyyy=0.003
+    var minyyy=-0.2
+    var maxxxx=2
+    var maxyyy=0.7
     var CRP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_cluster_risk_parity/${timeframe}/CRP_${quote}_${timeframe}.json`)))
     var MVP = JSON.parse(fs.readFileSync(path.join(__dirname,`../Portafogli_Varianza_Minima/${timeframe}/MVP_${quote}_${timeframe}.json`)))
     var Portafogli_Frontiere_Efficienti_Folder = fs.readdirSync(path.join(__dirname,`../Portafogli_Frontiere_Efficienti/${timeframe}/${quote}`))
@@ -35,10 +35,10 @@ try{
                 r_color='rgb(105,105,105)'
                 width=30
             }
-            if (etichetta===`DOGE${quote}`){
-                r_color='rgb(139,69,19)'
-                width=30
-            }
+            // if (etichetta===`DOGE${quote}`){
+            //     r_color='rgb(139,69,19)'
+            //     width=30
+            // }
             if (etichetta===`ADA${quote}`){
                 r_color='rgb(0,0,255)'
                 width=30
@@ -60,6 +60,7 @@ try{
             }
             return punto
     }).filter((x)=>{if(x)return x})
+    alert(tuttiIDataSets.length)
     var tutteLeCoppie = tuttiIfiles.map((x)=>{
         return x.pair
     }).filter((x)=>{if(x)return x})
@@ -74,7 +75,7 @@ try{
     tutteLeCoppie.push('Optimal Portfolio')
     var puntoMVP = {
         label:'Minimum Variance Portfolio',
-        data:[{x:MVP.deviazione_standard,y:MVP.rendimento_atteso}],
+        data:[{x:MVP.standard_deviation,y:MVP.expected_return}],
         borderColor: 'rgb(255, 0, 255)',
         backgroundColor: 'rgb(255, 0, 255)',
         borderWidth:35

@@ -118,7 +118,7 @@ class BinanceWatcher{
     })
   }
 
-  fetchCandlesFromAllPairs(quote,timeframe,periodCall,activePairs,justTrading,pairsToExclude){
+  fetchCandlesFromAllPairs(quote,timeframe,activePairs,justTrading,pairsToExclude){
     return new Promise((resolve)=>{
       console.log("Collecting Candles...")
       this.getAllPairs(quote,activePairs,justTrading,pairsToExclude).then(async(tutteLecoppie)=>{
@@ -526,101 +526,168 @@ class BinanceWatcher{
     })
   }
 
-  mvp(quote,tf,arrayOfReturns){ //shoutout to lequant40
+  // mvp(quote,tf,arrayOfReturns){ //shoutout to lequant40
+  //   return new Promise((resolve)=>{
+  //     try{
+  //       var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
+  //       var coppie = Object.keys(matriceCovarianza)
+  //       var arrayoflengths = arrayOfReturns.map((x)=>{
+  //         return x.length
+  //       }).filter((x)=>{if(x)return x})
+  //       var minimumCommonLength=_.min(arrayoflengths)
+  //       arrayOfReturns=arrayOfReturns.map((x)=>{
+  //           return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
+  //       })//.filter((x)=>{if(x) return x})
+  //       // console.log(arrayOfReturns) //ok
+  //       var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
+  //       romanCovMatr.coppie=coppie
+  //       var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
+  //       var pesiMVP = PortfolioAllocation.globalMinimumVarianceWeights(romanCovMatr)
+  //       var rendimentiPesati = []
+  //       for(var z=0;z<arrayOfReturns.length;z++){
+  //         var seriePesata =arrayOfReturns[z].map((x)=>{
+  //           return x*pesiMVP[z]
+  //         }) 
+  //         rendimentiPesati.push(seriePesata)
+  //       }
+  //       var MVPreturns = rendimentiPesati.reduce(function(a, b){ //succesione dei rendimenti del portafoglio ottimo
+  //         return a.map(function(v,i){
+  //             return v+b[i];
+  //         });
+  //       });
+  //       var MVPerroreStandard = ss.sampleStandardDeviation(MVPreturns)/Math.pow(MVPreturns.length,0.5)
+  //       var vettorepesiMVP={}
+  //       var arrayPesiMVP = []
+  //       for (var i=0;i<coppie.length;i++){
+  //         var w = {
+  //           pair:coppie[i],
+  //           weight:pesiMVP[i]
+  //         }
+  //         vettorepesiMVP[coppie[i]]=pesiMVP[i]+`; (${Math.round(pesiMVP[i]*Math.pow(10,4))/Math.pow(10,2)}%)`;
+  //         arrayPesiMVP.push(w)
+  //       }
+    
+  //       var rendimentoAttesoPortafoglio = 0
+  //       for(var i=0;i<pesiMVP.length;i++){
+  //           var prodotto = pesiMVP[i]*Array.from(romanE.data)[i]
+  //           rendimentoAttesoPortafoglio+=prodotto
+  //       }
+  //       var statT=rendimentoAttesoPortafoglio/MVPerroreStandard
+  //       var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
+  //       var arrayDiCOvarianze = Object.values(matriceCovarianza)
+  //       for(var i=0;i<arrayDiCOvarianze.length;i++){
+  //           var somma=0
+  //           for(var z=0;z<arrayDiCOvarianze[i].length;z++){
+  //               var prod=(arrayDiCOvarianze[i][z])*pesiMVP[z]
+  //               somma+=prod
+  //           }
+  //           primaMatriceProdotto.push(somma)
+  //       }
+  //       var deviazioneStandardPort = 0
+  //       for(var i=0;i<primaMatriceProdotto.length;i++){
+  //           deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiMVP[i])
+  //       }
+  //       deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
+  //       var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
+  //       var mvpPortfolio ={
+  //           pesi:vettorepesiMVP,
+  //           statisticaT_rendimento_atteso:statT,
+  //           numerosità_campione:MVPreturns.length,
+  //           rendimento_atteso:rendimentoAttesoPortafoglio,
+  //           deviazione_standard:deviazioneStandardPort,
+  //           sharpe_ratio:sharpe_ratio
+  //       }
+  //       var sintesi = {
+  //         rendimento_atteso:rendimentoAttesoPortafoglio,
+  //         deviazione_standard:deviazioneStandardPort,
+  //         sharpe_ratio:sharpe_ratio
+  //       }
+  //       arrayPesiMVP.push(sintesi)
+  //       var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Varianza_Minima/${tf}/MVP_${quote}_${tf}.json`))
+  //       if(esistePortafPrecedente){
+  //         var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Varianza_Minima/${tf}/MVP_${quote}_${tf}.json`)))
+  //         if (PortPrec.pesi){
+  //           var assetNuovi = Object.keys(mvpPortfolio.pesi)
+  //           var pesiNuovi = Object.values(mvpPortfolio.pesi)
+  //           var assetVecchi = Object.keys(PortPrec.pesi)
+  //           var pesiVecchi = Object.keys(PortPrec.pesi)
+  //           for(var i=0; i<assetNuovi.length; i++){
+  //             if(mvpPortfolio.pesi[assetVecchi[i]]){
+  //               mvpPortfolio.pesi[assetVecchi[i]]=mvpPortfolio.pesi[assetVecchi[i]]+`; ${Math.round(Number(Number(mvpPortfolio.pesi[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
+  //             }
+  //           }
+  //         }
+  //       }
+  //       this.createDir('Portafogli_Varianza_Minima').then((perc)=>{
+  //         this.createDir(tf,perc).then((percorso)=>{
+  //           fs.writeFileSync(path.join(percorso,`MVP_${quote}_${tf}.json`),JSON.stringify(mvpPortfolio))
+  //           this.createDir('Formato_Stealth',percorso).then((p)=>{
+  //             fs.writeFileSync(path.join(p,`MVP_${quote}_${tf}_stealth.json`),JSON.stringify(arrayPesiMVP))
+  //             this.createDir('CSV',percorso).then((p2)=>{
+  //               var csvMVP = ''
+  //               var soloCoppiaPeso = arrayPesiMVP.map((x)=>{
+  //                 if (x.weight){
+  //                   return x.pair+";"+x.weight
+  //                 }
+  //               }).filter((x)=>{if(x)return x})
+  //               for(var i=0;i<soloCoppiaPeso.length;i++){
+  //                 csvMVP+='BINANCE:'+soloCoppiaPeso[i]+'\n'
+  //               }
+  //               fs.writeFileSync(path.join(p2,`CSV_MVP_${quote}_${tf}.csv`),csvMVP)
+  //               this.createDir('list_of_returns',p2).then((zz)=>{
+  //                 var retMVP =''
+  //                 for(var q=0;q<MVPreturns.length;q++){
+  //                   retMVP+=MVPreturns[q]+'\n'
+  //                 }
+  //                 fs.writeFileSync(path.join(zz,`CSV_MVP_${quote}_${tf}_RETURNS.csv`),retMVP)
+  //               })
+  //             })
+  //           })
+  //         })
+  //       })
+  //       resolve(mvpPortfolio)
+  //     }catch(e){
+  //       console.log(e)
+  //       this.createDir('Portafogli_Varianza_Minima').then((perc)=>{
+  //         this.createDir(tf,perc).then((percorso)=>{
+  //           fs.writeFileSync(path.join(percorso,`MVP_${quote}_${tf}.json`),JSON.stringify(e))
+  //         })
+  //       })
+  //       resolve(e)
+  //     }
+  //   })
+  // }
+
+  mvp(quote,tf,mvp){ 
     return new Promise((resolve)=>{
       try{
-        var matriceCovarianza = JSON.parse(fs.readFileSync(path.join(__dirname,`Matrici_Covarianze/Cov_Matrix_${quote.toUpperCase()}_${tf}.json`)))
-        var coppie = Object.keys(matriceCovarianza)
-        var arrayoflengths = arrayOfReturns.map((x)=>{
-          return x.length
-        }).filter((x)=>{if(x)return x})
-        var minimumCommonLength=_.min(arrayoflengths)
-        arrayOfReturns=arrayOfReturns.map((x)=>{
-            return x.reverse().splice(0,minimumCommonLength) //we are sure that the pairs will remain the same since anyone will return undefined
-        })//.filter((x)=>{if(x) return x})
-        // console.log(arrayOfReturns) //ok
-        var romanCovMatr = PortfolioAllocation.covarianceMatrix(arrayOfReturns)
-        romanCovMatr.coppie=coppie
-        var romanE = PortfolioAllocation.meanVector(arrayOfReturns)
-        var pesiMVP = PortfolioAllocation.globalMinimumVarianceWeights(romanCovMatr)
-        var rendimentiPesati = []
-        for(var z=0;z<arrayOfReturns.length;z++){
-          var seriePesata =arrayOfReturns[z].map((x)=>{
-            return x*pesiMVP[z]
-          }) 
-          rendimentiPesati.push(seriePesata)
-        }
-        var MVPreturns = rendimentiPesati.reduce(function(a, b){ //succesione dei rendimenti del portafoglio ottimo
-          return a.map(function(v,i){
-              return v+b[i];
-          });
-        });
-        var MVPerroreStandard = ss.sampleStandardDeviation(MVPreturns)/Math.pow(MVPreturns.length,0.5)
-        var vettorepesiMVP={}
-        var arrayPesiMVP = []
-        for (var i=0;i<coppie.length;i++){
-          var w = {
-            pair:coppie[i],
-            weight:pesiMVP[i]
-          }
-          vettorepesiMVP[coppie[i]]=pesiMVP[i]+`; (${Math.round(pesiMVP[i]*Math.pow(10,4))/Math.pow(10,2)}%)`;
-          arrayPesiMVP.push(w)
-        }
-    
-        var rendimentoAttesoPortafoglio = 0
-        for(var i=0;i<pesiMVP.length;i++){
-            var prodotto = pesiMVP[i]*Array.from(romanE.data)[i]
-            rendimentoAttesoPortafoglio+=prodotto
-        }
-        var statT=rendimentoAttesoPortafoglio/MVPerroreStandard
-        var primaMatriceProdotto =[] //mi aspetto una matrice di una sola riga e di n colonne quante sono le coppie in portafoglio
-        var arrayDiCOvarianze = Object.values(matriceCovarianza)
-        for(var i=0;i<arrayDiCOvarianze.length;i++){
-            var somma=0
-            for(var z=0;z<arrayDiCOvarianze[i].length;z++){
-                var prod=(arrayDiCOvarianze[i][z])*pesiMVP[z]
-                somma+=prod
-            }
-            primaMatriceProdotto.push(somma)
-        }
-        var deviazioneStandardPort = 0
-        for(var i=0;i<primaMatriceProdotto.length;i++){
-            deviazioneStandardPort+=(primaMatriceProdotto[i]*pesiMVP[i])
-        }
-        deviazioneStandardPort=Math.pow(deviazioneStandardPort,0.5)
-        var sharpe_ratio = rendimentoAttesoPortafoglio/deviazioneStandardPort
-        var mvpPortfolio ={
-            pesi:vettorepesiMVP,
-            statisticaT_rendimento_atteso:statT,
-            numerosità_campione:MVPreturns.length,
-            rendimento_atteso:rendimentoAttesoPortafoglio,
-            deviazione_standard:deviazioneStandardPort,
-            sharpe_ratio:sharpe_ratio
-        }
-        var sintesi = {
-          rendimento_atteso:rendimentoAttesoPortafoglio,
-          deviazione_standard:deviazioneStandardPort,
-          sharpe_ratio:sharpe_ratio
-        }
-        arrayPesiMVP.push(sintesi)
+        var mvpFromEfficientFrontier = mvp
+        
         var esistePortafPrecedente = fs.existsSync(path.join(__dirname,`Portafogli_Varianza_Minima/${tf}/MVP_${quote}_${tf}.json`))
         if(esistePortafPrecedente){
           var PortPrec = JSON.parse(fs.readFileSync(path.join(__dirname,`Portafogli_Varianza_Minima/${tf}/MVP_${quote}_${tf}.json`)))
           if (PortPrec.pesi){
-            var assetNuovi = Object.keys(mvpPortfolio.pesi)
-            var pesiNuovi = Object.values(mvpPortfolio.pesi)
+            var assetNuovi = Object.keys(mvpFromEfficientFrontier.weights)
             var assetVecchi = Object.keys(PortPrec.pesi)
-            var pesiVecchi = Object.keys(PortPrec.pesi)
             for(var i=0; i<assetNuovi.length; i++){
-              if(mvpPortfolio.pesi[assetVecchi[i]]){
-                mvpPortfolio.pesi[assetVecchi[i]]=mvpPortfolio.pesi[assetVecchi[i]]+`; ${Math.round(Number(Number(mvpPortfolio.pesi[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
+              if(mvpFromEfficientFrontier.weights[assetVecchi[i]]){
+                mvpFromEfficientFrontier.weights[assetVecchi[i]]=mvpFromEfficientFrontier.weights[assetVecchi[i]]+`; ${Math.round(Number(Number(mvpFromEfficientFrontier.weights[assetVecchi[i]].split(";")[0])-Number(PortPrec.pesi[assetVecchi[i]].split(";")[0]))*Math.pow(10,4))/Math.pow(10,2)}%`
               }
             }
           }
         }
+        var arraydelleCoppie =Object.keys(mvpFromEfficientFrontier.weights)
+        var arraydeiPesi=Object.values(mvpFromEfficientFrontier.weights)
+        var arrayPesiMVP=arraydelleCoppie.map((x,i)=>{
+          var w={
+            pair:x,
+            weight:arraydeiPesi[i]
+          }
+          return w
+        })
         this.createDir('Portafogli_Varianza_Minima').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
-            fs.writeFileSync(path.join(percorso,`MVP_${quote}_${tf}.json`),JSON.stringify(mvpPortfolio))
+            fs.writeFileSync(path.join(percorso,`MVP_${quote}_${tf}.json`),JSON.stringify(mvpFromEfficientFrontier))
             this.createDir('Formato_Stealth',percorso).then((p)=>{
               fs.writeFileSync(path.join(p,`MVP_${quote}_${tf}_stealth.json`),JSON.stringify(arrayPesiMVP))
               this.createDir('CSV',percorso).then((p2)=>{
@@ -634,18 +701,11 @@ class BinanceWatcher{
                   csvMVP+='BINANCE:'+soloCoppiaPeso[i]+'\n'
                 }
                 fs.writeFileSync(path.join(p2,`CSV_MVP_${quote}_${tf}.csv`),csvMVP)
-                this.createDir('list_of_returns',p2).then((zz)=>{
-                  var retMVP =''
-                  for(var q=0;q<MVPreturns.length;q++){
-                    retMVP+=MVPreturns[q]+'\n'
-                  }
-                  fs.writeFileSync(path.join(zz,`CSV_MVP_${quote}_${tf}_RETURNS.csv`),retMVP)
-                })
               })
             })
           })
         })
-        resolve(mvpPortfolio)
+        resolve(mvpFromEfficientFrontier)
       }catch(e){
         console.log(e)
         this.createDir('Portafogli_Varianza_Minima').then((perc)=>{
@@ -953,22 +1013,26 @@ class BinanceWatcher{
           var sharpe = rendimentoAtteso/standard_deviation
           return {
             weights: w,
-            numerosità_campione:arrayOfReturns.length,
+            numerosità_campione:minimumCommonLength,
             expected_return: rendimentoAtteso,
             standard_deviation:standard_deviation,
             sharpe_ratio:sharpe
           }
         })
+        var mvp = {}
         this.createDir('Portafogli_Frontiere_Efficienti').then((perc)=>{
           this.createDir(tf,perc).then((percorso)=>{
             this.createDir(quote,percorso).then((perccc)=>{
               for(var i=0;i<portafogliEfficienti.length;i++){
+                if(!i){
+                  mvp = portafogliEfficienti[i]
+                }
                 fs.writeFileSync(path.join(perccc,`Eficient_PF${i}_${quote}_${tf}.json`),JSON.stringify(portafogliEfficienti[i]))
               }
+              resolve(mvp)
             })
           })
         })
-        resolve(portafogliEfficienti)
       }catch(e){
         resolve(e)
       }

@@ -5,14 +5,18 @@ const _ =require('lodash');
 
 //const quote="BNB" //"USDT","BTC","ETH","BNB"
 var quoteList = ["USDT","BUSD","ETH","BTC","BNB"]
-const timeframes =["1d","1d","1w","1h","5m","4h","1M"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
-var pairsToExclude=["JUV","ACM","OG","BAR","PSG","ASR","ATM","SUSD","WBTC","GBP","AUD","EUR","PAX","DAI","TUSD","USDC","USDT","BUSD","1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
-const periodCall = 0 //interval between one api call and the next one
+const timeframes =["1d","6h","1h","30m","4h","1w","1M","5m"] //1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w 1M
+var fanTokens = ["JUV","ACM","OG","BAR","PSG","ASR","ATM"]
+var stables = ["SUSD","DAI","TUSD","USDC","USDT","BUSD"]
+var LeveragedTokens = ["1INCHUP","1INCHDOWN","XLMUP","XLMDOWN","SUSHIUP","SUSHIDOWN","AAVEUP","AAVEDOWN","BCHUP","BCHDOWN","YFIUP","YFIDOWN","FILDOWN","FILUP","SXPUP","SXPDOWN","UNIUP","UNIDOWN","LTCUP","LTCDOWN","XRPUP","XRPDOWN","DOTUP","DOTDOWN","TRXUP","TRXDOWN","EOSUP","EOSDOWN","XTZUP","XTZDOWN","BNBUP","BNBDOWN","LINKUP","LINKDOWN","ADAUP","ADADOWN","ETHUP","ETHDOWN","BTCUP","BTCDOWN"]
+var fiat = ["GBP","AUD","EUR"]
+var otherPairs = ["WBTC","PAX"]
+var pairsToExclude=[...fanTokens,...stables,...otherPairs]
 const activePairs=["BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "OMGUSDT", "VETUSDT", "LINKUSDT", "ZILUSDT", "ETCUSDT", "BATUSDT", "XLMUSDT", "XRPUSDT", "ICXUSDT", "QTUMUSDT", "MANAUSDT", "TRXUSDT", "ZRXUSDT", "FTMUSDT", "STORJUSDT", "KNCUSDT", "COMPUSDT", "SUSHIUSDT", "BANDUSDT", "ZECUSDT", "ALGOUSDT", "MITHUSDT", "MATICUSDT", "ZENUSDT", "LUNAUSDT", "SOLUSDT"]
 var justTradingPairs = false
 const watcher = new BinanceWatcher()
 const bestNSharpes = 25
-var requiredCandles = 13 //for covariance matrix, optimal portfolio and statistics
+var requiredCandles = 300 //for covariance matrix, optimal portfolio and statistics
 var target = 0 //Target for Downside Risk
 //Quanto deve essere numeroso il campione affinché i risultati siano significativi? più aumenta, peggiori sono i valori e minore è l'opportunità di cogliere le ultime performance di rendimento (perché minore sarà la sensibilità nell'intercettarle)  
 
@@ -23,7 +27,7 @@ return new Promise((RES)=>{
   var doIt = function(){
     return new Promise((resolve,reject)=>{
       console.log("inizio:",i,quoteList.length,z,timeframes.length)
-      watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],periodCall,activePairs,justTradingPairs,pairsToExclude)
+      watcher.fetchCandlesFromAllPairs(quoteList[i],timeframes[z],activePairs,justTradingPairs,pairsToExclude)
       .then(()=>{
         setTimeout(()=>{
           watcher.tutteLeCoppieSintesiStatisticaDescrittiva(quoteList[i],timeframes[z],requiredCandles,target).then(()=>{
@@ -57,9 +61,9 @@ return new Promise((RES)=>{
                   watcher.portafoglioOttimo(quoteList[i],timeframes[z],all_returns2).then((portafoglioOttimo)=>{
                     watcher.tuttoInCsv(quoteList[i],timeframes[z]).then((csv)=>{
                       watcher.tuttoInCsv(quoteList[i],timeframes[z],pairNames).then((csv_filtered)=>{
-                        watcher.mvp(quoteList[i],timeframes[z],all_returns3).then((mvp)=>{
-                          watcher.portafoglioEquiponderato(quoteList[i],timeframes[z],all_returns4).then((equiponderato)=>{
-                            watcher.efficientFrontier(quoteList[i],timeframes[z],all_returns5).then((efficientFrontier)=>{
+                        watcher.portafoglioEquiponderato(quoteList[i],timeframes[z],all_returns3).then((equiponderato)=>{
+                          watcher.efficientFrontier(quoteList[i],timeframes[z],all_returns4).then((mvpp)=>{
+                            watcher.mvp(quoteList[i],timeframes[z],mvpp).then((m_vp)=>{
                               watcher.crp(quoteList[i],timeframes[z],all_returns6)
                               .then((crp)=>{
                                 console.log(portafoglioOttimo)
